@@ -24,6 +24,10 @@ before changing the app or the reading page.
 - The phone reaches the same server through Surge Ponte at
   `STUDIO.sgponte:<port>` — the address the app shows and copies. `TERN_PONTE`
   renames the machine and `TERN_PUBLIC_URL` replaces the whole address.
+- Two pages of that same HTML file exist for the phone only: `/threads` starts
+  a conversation from a link and lists them, `/t/<id>` shows one conversation
+  and continues it. They use the same JSON API as the native pages; the desktop
+  keeps its native chat and does not link to them.
 
 ## Hard rule: keep the UI still
 

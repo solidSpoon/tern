@@ -830,6 +830,154 @@ html.embed .article__foot a { display: none; }
   * { animation-duration: 0.001s !important; transition-duration: 0.001s !important; }
   html { scroll-behavior: auto; }
 }
+
+/* ------------------------------------------------------------------ threads */
+.thread-list { margin: 0; }
+.thread-row {
+  display: block;
+  padding: 15px 0 14px;
+  border-bottom: 1px solid var(--rule);
+  text-decoration: none;
+  color: inherit;
+}
+.thread-row__top { display: flex; align-items: baseline; gap: 10px; }
+.thread-row__title {
+  font-family: var(--serif);
+  font-size: 16.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  min-width: 0;
+}
+.thread-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+.state {
+  flex: none;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 1px 7px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.state--running { color: var(--accent); border-color: var(--accent); }
+.state--error { color: var(--danger); border-color: var(--danger); }
+
+.import { display: flex; gap: 8px; margin: 16px 0 6px; }
+.import__input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-radius: 9px;
+  -webkit-appearance: none;
+}
+.import__input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+.import .chip { flex: none; }
+
+/* One conversation */
+.thread { max-width: 720px; margin: 0 auto; }
+.thread__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 0 12px;
+  border-bottom: 1px solid var(--rule);
+}
+.thread__back { flex: none; font-size: 12px; color: var(--ink-2); text-decoration: none; padding: 2px 0; }
+.thread__meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.thread__meta strong { font-size: 13px; }
+.thread__meta span { font-size: 11px; color: var(--ink-3); overflow-wrap: anywhere; }
+.thread__read {
+  flex: none;
+  font-size: 12px;
+  padding: 5px 11px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.thread__read[hidden] { display: none; }
+
+.chat { list-style: none; margin: 0; padding: 20px 0 10px; display: flex; flex-direction: column; gap: 16px; }
+.chat__who { font-size: 10px; letter-spacing: 0.08em; color: var(--ink-3); margin-bottom: 4px; }
+.chat__bubble {
+  max-width: 92%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--paper-2);
+  font-size: 14px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.chat--user .chat__bubble { background: var(--paper-3); }
+.chat__text { font-size: 14.5px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
+.chat__text code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--paper-3);
+}
+.chat__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: -4px;
+}
+.chat__tool { white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.chat__note { font-size: 12px; color: var(--ink-3); line-height: 1.6; }
+
+.composer {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+  background: color-mix(in oklab, var(--paper) 92%, transparent);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  border-top: 1px solid var(--rule);
+}
+.composer__text {
+  flex: 1;
+  min-width: 0;
+  min-height: 42px;
+  max-height: 150px;
+  padding: 11px 12px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  resize: none;
+}
+.composer__text:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+.composer .chip { flex: none; height: 42px; }
+
+@media (max-width: 520px) {
+  .thread__head { flex-wrap: wrap; }
+  .thread__meta { flex-basis: calc(100% - 80px); }
+  .thread__read { order: 3; }
+}
 </style>
 </head>
 <body>
@@ -842,6 +990,7 @@ html.embed .article__foot a { display: none; }
     <div class="masthead__right" id="masthead-right">
       <nav class="nav">
         <a class="nav__link" href="/" data-nav="home">首页</a>
+        <a class="nav__link" href="/threads" data-nav="threads">对话</a>
         <a class="nav__link" href="/vocab" data-nav="vocab">生词本</a>
       </nav>
     </div>
@@ -1455,6 +1604,268 @@ html.embed .article__foot a { display: none; }
     render();
   }
 
+  // ------------------------------------------------------------------ threads
+  // The phone has no import dialog of its own, so these two pages are it: the
+  // list starts a conversation from a link, the detail shows what the agent is
+  // doing and lets the reader keep talking.
+
+  let chatTimer = 0;
+  const stopChat = () => {
+    if (chatTimer) clearTimeout(chatTimer);
+    chatTimer = 0;
+  };
+
+  function threadHost(url) {
+    try {
+      return new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+      return url;
+    }
+  }
+
+  function timeAgo(iso) {
+    const then = new Date(iso).getTime();
+    if (Number.isNaN(then)) return '';
+    const minutes = Math.max(0, Math.round((Date.now() - then) / 60000));
+    if (minutes < 1) return '刚刚';
+    if (minutes < 60) return `${minutes} 分钟前`;
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return `${hours} 小时前`;
+    return formatDate(iso, true);
+  }
+
+  function stateLabel(state) {
+    if (state === 'running') return '进行中';
+    if (state === 'error') return '失败';
+    return '已完成';
+  }
+
+  function threadRow(t) {
+    const title = t.title || threadHost(t.url);
+    return `<a class="thread-row" href="/t/${encodeURIComponent(t.id)}">
+      <div class="thread-row__top">
+        <span class="state state--${esc(t.state)}">${stateLabel(t.state)}</span>
+        <span class="thread-row__title">${esc(title)}</span>
+      </div>
+      <div class="thread-row__meta">
+        <span>${esc(threadHost(t.url))}</span>
+        <span>${timeAgo(t.updatedAt)}</span>
+        ${t.messageCount ? `<span>${t.messageCount} 条</span>` : ''}
+      </div>
+    </a>`;
+  }
+
+  function toolHint(event) {
+    if (!event.args) return '';
+    try {
+      const args = JSON.parse(event.args);
+      if (args.command) {
+        const word = String(args.command).trim().split(/\s+/)[0];
+        return ' ' + word.replace(/^.*\//, '');
+      }
+      if (args.path) return ' ' + String(args.path).split('/').pop();
+    } catch {}
+    return '';
+  }
+
+  // Inline code is the only markup an assistant message needs: the text is
+  // escaped first, so the replacement cannot introduce tags from the model.
+  const inlineCode = (text) => text.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  function chatMarkup(events) {
+    const out = [];
+    let tools = [];
+    const flush = () => {
+      if (!tools.length) return;
+      out.push(`<li class="chat__tools">${tools
+        .map(
+          (event) =>
+            `<span class="chat__tool" title="${esc(event.detail || event.args || '')}">· ${esc(event.tool)}${esc(toolHint(event))}</span>`,
+        )
+        .join('')}</li>`);
+      tools = [];
+    };
+    for (const event of events || []) {
+      if (event.type === 'tool') {
+        tools.push(event);
+        continue;
+      }
+      flush();
+      if (event.type === 'user') {
+        out.push(
+          `<li class="chat--user"><div class="chat__who">你</div><div class="chat__bubble">${esc(event.text)}</div></li>`,
+        );
+      } else if (event.type === 'assistant') {
+        out.push(`<li><div class="chat__who">Tern</div><div class="chat__text">${inlineCode(esc(event.text))}</div></li>`);
+      } else if (event.type === 'status') {
+        out.push(`<li class="chat__note">${esc(event.text)}</li>`);
+      }
+    }
+    flush();
+    return out.join('');
+  }
+
+  async function renderThreads() {
+    document.title = '对话 · Tern';
+    setNav('threads');
+    stopChat();
+    page.innerHTML = `<section class="panel">
+      <span class="kicker">对话</span>
+      <h1 class="panel__title">导入与对话</h1>
+      <p class="panel__lede">贴一个链接开一个对话。Agent 在这台 Mac 上打开页面、抽出正文、逐段翻译并入库，过程会出现在下面的对话里。</p>
+      <form class="import" id="import">
+        <input class="import__input" id="import-url" type="url" inputmode="url" autocomplete="off"
+          autocapitalize="off" spellcheck="false" placeholder="https://example.com/article" aria-label="网页链接" />
+        <button class="chip" id="import-go" type="submit" disabled>开始</button>
+      </form>
+      <p class="status-line" id="threads-status">读取中…</p>
+      <div class="thread-list" id="threads-list"></div>
+    </section>`;
+
+    const status = document.getElementById('threads-status');
+    const list = document.getElementById('threads-list');
+    const form = document.getElementById('import');
+    const input = document.getElementById('import-url');
+    const go = document.getElementById('import-go');
+
+    const load = async (silent) => {
+      try {
+        const { threads } = await api('/api/threads');
+        list.innerHTML = threads.length
+          ? threads.map(threadRow).join('')
+          : '<p class="empty--inline">还没有对话。贴一个链接开始。</p>';
+        status.textContent = '';
+        status.classList.remove('is-error');
+        if (threads.some((t) => t.state === 'running')) {
+          chatTimer = setTimeout(() => load(true), 1500);
+        }
+      } catch (error) {
+        if (silent) return;
+        status.textContent = error.message;
+        status.classList.add('is-error');
+      }
+    };
+
+    input.addEventListener('input', () => {
+      go.disabled = !input.value.trim();
+    });
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const url = input.value.trim();
+      if (!url || go.disabled) return;
+      go.disabled = true;
+      go.textContent = '创建中…';
+      status.textContent = '正在创建对话…';
+      status.classList.remove('is-error');
+      try {
+        const { thread } = await api('/api/threads', { method: 'POST', body: JSON.stringify({ url }) });
+        location.assign(`/t/${encodeURIComponent(thread.id)}`);
+      } catch (error) {
+        status.textContent = error.message;
+        status.classList.add('is-error');
+        go.disabled = false;
+        go.textContent = '开始';
+      }
+    });
+
+    await load(false);
+  }
+
+  async function renderThread(id) {
+    document.title = '对话 · Tern';
+    setNav('threads');
+    stopChat();
+    page.innerHTML = `<section class="thread">
+      <div class="thread__head">
+        <a class="thread__back" href="/threads">← 对话</a>
+        <div class="thread__meta" id="thread-meta"></div>
+        <a class="thread__read" id="thread-read" href="#" hidden>阅读全文 →</a>
+      </div>
+      <p class="status-line" id="thread-status">读取中…</p>
+      <ol class="chat" id="chat"></ol>
+      <form class="composer" id="composer">
+        <textarea class="composer__text" id="composer-text" rows="1" placeholder="继续提要求…" aria-label="消息"></textarea>
+        <button class="chip" id="composer-send" type="submit" disabled>发送</button>
+      </form>
+    </section>`;
+
+    const status = document.getElementById('thread-status');
+    const meta = document.getElementById('thread-meta');
+    const read = document.getElementById('thread-read');
+    const chat = document.getElementById('chat');
+    const form = document.getElementById('composer');
+    const input = document.getElementById('composer-text');
+    const send = document.getElementById('composer-send');
+
+    let first = true;
+
+    const paint = (thread, busy) => {
+      meta.innerHTML = `<strong>${esc(threadHost(thread.url))}</strong><span>${esc(thread.url)}</span>`;
+      if (thread.articleId) {
+        read.hidden = false;
+        read.href = `/a/${encodeURIComponent(thread.articleId)}`;
+      }
+      const running = thread.state === 'running' || busy;
+      const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 140;
+      chat.innerHTML = chatMarkup(thread.events);
+      if (first || atBottom) {
+        requestAnimationFrame(() => window.scrollTo(0, document.body.scrollHeight));
+      }
+      first = false;
+      input.disabled = running;
+      input.placeholder = running
+        ? 'Agent 干活中……'
+        : thread.articleId
+          ? '继续提要求，例如：把第三段翻得更口语一点'
+          : '补充说明，或让它继续';
+      send.disabled = running || !input.value.trim();
+      status.textContent = running ? 'Agent 正在工作…' : thread.state === 'error' ? thread.error : '';
+      status.classList.toggle('is-error', thread.state === 'error');
+      return running;
+    };
+
+    const load = async () => {
+      try {
+        const { thread, busy } = await api(`/api/threads/${encodeURIComponent(id)}`);
+        const running = paint(thread, Boolean(busy));
+        if (running) chatTimer = setTimeout(load, 1200);
+      } catch (error) {
+        status.textContent = error.message;
+        status.classList.add('is-error');
+      }
+    };
+
+    input.addEventListener('input', () => {
+      send.disabled = input.disabled || !input.value.trim();
+      input.style.height = 'auto';
+      input.style.height = `${Math.min(input.scrollHeight, 150)}px`;
+    });
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const text = input.value.trim();
+      if (!text || send.disabled) return;
+      send.disabled = true;
+      input.readOnly = true;
+      try {
+        await api(`/api/threads/${encodeURIComponent(id)}/messages`, {
+          method: 'POST',
+          body: JSON.stringify({ text }),
+        });
+        input.value = '';
+        input.style.height = '';
+        await load();
+      } catch (error) {
+        status.textContent = error.message;
+        status.classList.add('is-error');
+      } finally {
+        input.readOnly = false;
+        send.disabled = !input.value.trim();
+      }
+    });
+
+    await load();
+  }
+
   // ------------------------------------------------------------------ host API
 
   // The native toolbar drives the page with these. They keep the page's own
@@ -1489,7 +1900,10 @@ html.embed .article__foot a { display: none; }
   function route() {
     const path = location.pathname.replace(/\/+$/, '') || '/';
     if (path === '/') return renderHome();
+    if (path === '/threads') return renderThreads();
     if (path === '/vocab') return renderVocab();
+    const thread = path.match(/^\/t\/([^/]+)$/);
+    if (thread) return renderThread(decodeURIComponent(thread[1]));
     const article = path.match(/^\/a\/([^/]+)$/);
     if (article) return renderArticle(decodeURIComponent(article[1]));
     page.innerHTML = `<section class="empty"><h1>页面不存在</h1><p>链接可能已经失效。</p>
