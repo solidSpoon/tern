@@ -92,9 +92,8 @@ type App struct {
 	install      pi.Progress
 	articleCount int
 
-	pollMu    sync.Mutex
-	pollID    string
-	pollState model.ThreadState
+	pollMu sync.Mutex
+	pollID string
 }
 
 // indexOf finds a preference's index, 0 when it is unknown.
@@ -495,9 +494,9 @@ func (app *App) startPoller() {
 		defer ticker.Stop()
 		for range ticker.C {
 			app.pollMu.Lock()
-			id, state := app.pollID, app.pollState
+			id := app.pollID
 			app.pollMu.Unlock()
-			if id == "" || state != model.ThreadRunning || app.win == nil {
+			if id == "" || app.win == nil {
 				continue
 			}
 			thread, err := app.mgr.Get(id)
@@ -505,12 +504,34 @@ func (app *App) startPoller() {
 				continue
 			}
 			app.refresh(func() {
-				if app.threadID == id {
-					app.applyThread(thread)
+				if app.threadID != id || sameThread(app.thread, thread) {
+					return
 				}
+				app.applyThread(thread)
 			})
 		}
 	}()
+}
+
+// sameThread is the poller's guard against repainting a conversation that has
+// not changed since the last frame.
+func sameThread(a, b *model.Thread) bool {
+	if a == nil || b == nil {
+		return false
+	}
+	if a.ID != b.ID || a.State != b.State || a.Article != b.Article || a.Error != b.Error {
+		return false
+	}
+	if len(a.Events) != len(b.Events) {
+		return false
+	}
+	if n := len(a.Events); n > 0 {
+		x, y := a.Events[n-1], b.Events[n-1]
+		if x.ID != y.ID || x.Status != y.Status || x.Text != y.Text {
+			return false
+		}
+	}
+	return true
 }
 
 func (app *App) applyThread(thread *model.Thread) {
@@ -521,7 +542,6 @@ func (app *App) applyThread(thread *model.Thread) {
 
 	app.pollMu.Lock()
 	app.pollID = thread.ID
-	app.pollState = thread.State
 	app.pollMu.Unlock()
 
 	// Keep the list's badges and the feed honest when a round finishes.

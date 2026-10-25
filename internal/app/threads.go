@@ -250,7 +250,6 @@ func (app *App) chatPage(c *ui.Context, id string) {
 		app.chatErr = ""
 		app.pollMu.Lock()
 		app.pollID = ""
-		app.pollState = model.ThreadIdle
 		app.pollMu.Unlock()
 		app.loadThread(id)
 	}
