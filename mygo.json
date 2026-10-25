@@ -1,7 +1,7 @@
 {
   "name": "Tern",
   "identifier": "com.solidspoon.tern",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "copyright": "Copyright © 2026 solidSpoon",
   "icon": "resources/icon.png",
   "out": "build"
