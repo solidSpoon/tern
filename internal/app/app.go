@@ -204,7 +204,7 @@ func (app *App) openWindow() {
 	app.win = win
 
 	view, err := win.NewWebView(mygo.WebViewOptions{
-		BackgroundColor: "light-dark(#FBF6EA, #0B2129)",
+		BackgroundColor: "light-dark(#fbfbfb, #111112)",
 	})
 	if err != nil {
 		logError("reading pane", err)
@@ -218,49 +218,21 @@ func (app *App) openWindow() {
 
 // ------------------------------------------------------------------ shell
 
-// The icon's palette: warm paper with deep teal ink in the light theme, polar
-// night with cream in the dark one, and the bill's terracotta as the accent
-// both ways. The reading page repeats these values in its own CSS tokens.
-var (
-	lightPaper  = ui.Hex("#FBF6EA")
-	lightFace   = ui.Hex("#F3EAD8")
-	lightBorder = ui.Hex("#DCCBAB")
-	lightInk    = ui.Hex("#122A31")
-	lightMuted  = ui.Hex("#6F8084")
-	lightAccent = ui.Hex("#B4552A")
-
-	darkPaper  = ui.Hex("#0B2129")
-	darkFace   = ui.Hex("#12333D")
-	darkBorder = ui.Hex("#2A4C56")
-	darkInk    = ui.Hex("#F1E7D4")
-	darkMuted  = ui.Hex("#8FA3A8")
-	darkAccent = ui.Hex("#E8873C")
-)
-
-// applyTheme paints the native UI in Tern's own colors, so the app and its
-// icon read as one thing.
+// applyTheme gives the native UI Tern's own ink and accent. Backgrounds stay
+// the system's: the app should sit on the platform, not on a color of its own.
+// The reading page repeats these values in its CSS tokens.
 func (app *App) applyTheme(c *ui.Context) {
 	theme := *c.Theme()
 	if theme.Dark {
-		theme.Background = darkPaper
-		theme.Surface = darkFace
-		theme.SurfaceHover = darkFace.Mix(ui.RGB(255, 255, 255), 0.06)
-		theme.SurfacePressed = darkFace.Mix(ui.RGB(0, 0, 0), 0.2)
-		theme.Border = darkBorder
-		theme.Text = darkInk
-		theme.TextMuted = darkMuted
-		theme.Accent = darkAccent
-		theme.AccentText = ui.Hex("#17110C")
+		theme.Text = ui.Hex("#f1e7d4")
+		theme.TextMuted = ui.Hex("#8fa3a8")
+		theme.Accent = ui.Hex("#e8873c")
+		theme.AccentText = ui.Hex("#17110c")
 	} else {
-		theme.Background = lightPaper
-		theme.Surface = lightFace
-		theme.SurfaceHover = lightFace.Mix(ui.RGB(0, 0, 0), 0.04)
-		theme.SurfacePressed = lightFace.Mix(ui.RGB(0, 0, 0), 0.08)
-		theme.Border = lightBorder
-		theme.Text = lightInk
-		theme.TextMuted = lightMuted
-		theme.Accent = lightAccent
-		theme.AccentText = ui.Hex("#FFF8EC")
+		theme.Text = ui.Hex("#122a31")
+		theme.TextMuted = ui.Hex("#6f8084")
+		theme.Accent = ui.Hex("#b4552a")
+		theme.AccentText = ui.Hex("#fff8ec")
 	}
 	theme.AccentHover = theme.Accent.Mix(ui.RGB(255, 255, 255), 0.14)
 	theme.AccentPressed = theme.Accent.Mix(ui.RGB(0, 0, 0), 0.16)
