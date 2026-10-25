@@ -74,18 +74,20 @@ Measured behaviours that must keep working (tests cover some of them):
 ## Development
 
 ```bash
-./dev.sh                          # development: this checkout's code, ./data, dev icon
-./dev.sh -port 8788               # a second copy next to the installed app
+./dev.sh                          # development: this checkout's code, ./data, dev icon, port 8788
 ./dev.sh --headless               # server only (phone / browser)
+PORT=9000 ./dev.sh                # another port
 TERN_ROUTE=/a/inkwell ./dev.sh    # open the app on a page
 go test ./...                     # model, store, publish, pi, native views
 TERN_SHOTS=1 go test ./internal/app -run TestSnapshot   # native frames to /tmp/tern-shots
 ```
 
-`dev.sh` is `TERN_HOME=. go run .` with the working directory pinned: the
-library lives in `./data`, and the installed app's copy in
-`~/Library/Application Support/Tern` is left alone. Arguments after `./dev.sh`
-go straight to the app.
+`dev.sh` is `TERN_HOME=. PORT=8788 go run .` with the working directory
+pinned: the library lives in `./data`, the installed app's copy in
+`~/Library/Application Support/Tern` is left alone, and development listens on
+8788 so it can run beside the installed app on 8787. `PORT` moves it; a port
+saved in the dev app's Settings wins over both. Arguments after `./dev.sh` go
+straight to the app.
 
 A run from source (`go run .`, `./dev.sh`) shows the development icon in the
 Dock: `useDockIcon` reads `assets/brand/png/icon-dev-512.png` when
