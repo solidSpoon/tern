@@ -84,7 +84,7 @@ func main() {
 	localURL := fmt.Sprintf("http://127.0.0.1:%d", port)
 	// baseURL is what the reader should type on the phone: TERN_PUBLIC_URL
 	// when a tunnel or Surge Ponte gives it another name.
-	baseURL := publicURL(os.Getenv("TERN_PUBLIC_URL"), *host, port)
+	baseURL := publicURL(os.Getenv("TERN_PUBLIC_URL"), port)
 
 	// The server starts first: the article windows and the agent's callbacks
 	// both need it, and the phone may already be reading.
@@ -151,19 +151,24 @@ func main() {
 	mgr.CloseAll()
 }
 
-// publicURL keeps TERN_PUBLIC_URL's name but follows the port the server
-// actually listens on: changing the port in Settings changes the phone address
-// too.
-func publicURL(configured, host string, port int) string {
+// ponteName is what this Mac answers to in Surge Ponte: the phone reaches the
+// reader at <name>.sgponte:<port>. TERN_PONTE gives another machine its own
+// name; TERN_PUBLIC_URL replaces the whole address for a tunnel or another host.
+const ponteName = "STUDIO"
+
+// publicURL is the address shown for the phone. It follows the port the server
+// actually listens on, so changing the port in Settings changes the address
+// too, and the development port gets its own address for free.
+func publicURL(configured string, port int) string {
 	if configured != "" {
 		if parsed, err := url.Parse(configured); err == nil && parsed.Hostname() != "" {
 			parsed.Host = net.JoinHostPort(parsed.Hostname(), strconv.Itoa(port))
 			return parsed.String()
 		}
 	}
-	shownHost := host
-	if shownHost == "0.0.0.0" || shownHost == "::" || shownHost == "" {
-		shownHost = "127.0.0.1"
+	name := os.Getenv("TERN_PONTE")
+	if name == "" {
+		name = ponteName
 	}
-	return fmt.Sprintf("http://%s:%d", shownHost, port)
+	return fmt.Sprintf("http://%s.sgponte:%d", name, port)
 }

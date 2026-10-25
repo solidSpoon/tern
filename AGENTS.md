@@ -21,6 +21,9 @@ before changing the app or the reading page.
   overrides it for development). Articles are the JSON contract in
   `internal/model`; agents only fill that contract — no HTML, no components, no
   styles.
+- The phone reaches the same server through Surge Ponte at
+  `STUDIO.sgponte:<port>` — the address the app shows and copies. `TERN_PONTE`
+  renames the machine and `TERN_PUBLIC_URL` replaces the whole address.
 
 ## Hard rule: keep the UI still
 

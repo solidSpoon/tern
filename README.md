@@ -26,13 +26,16 @@ go run . --headless          # 只跑阅读服务，供手机 / 浏览器访问
 | `HOST` / `--host` | 监听地址，默认 `127.0.0.1`；要在局域网里调试用 `0.0.0.0` |
 | `TERN_HOME` / `--root` | 临时指定数据根目录（默认用设置里选的目录） |
 | `TERN_MEDIA_DIR` | 单独覆盖图片目录 |
-| `TERN_PUBLIC_URL` | 手机上看到的地址（Surge Ponte / 隧道），只影响界面提示 |
+| `TERN_PUBLIC_URL` | 手机上看到的地址；设了就整个用它（只替换端口），不再拼 Ponte 域名 |
+| `TERN_PONTE` | 这台机器在 Surge Ponte 里的名字，默认 `STUDIO` |
 | `TERN_PI_BIN` | 直接指定 `pi` 可执行文件，跳过运行时安装（开发用） |
 | `TERN_HEADLESS=1` | 同 `--headless` |
 | `TERN_ROUTE` | 桌面端启动时打开指定页面，如 `/a/inkwell`（开发 / 深链用） |
 
-手机：让 Surge Ponte（或任意隧道）把 `studio.sgponte:8787` 指到本机 8787，然后用 iPhone
-打开 `http://studio.sgponte:8787`。服务只监听 `127.0.0.1` 时就已够用，Ponte 在本机解析它。
+手机：这台机器在 Surge Ponte 里叫 `STUDIO`，用 Ponte 组网后 iPhone 直接打开
+`http://STUDIO.sgponte:8787`（开发版是 `http://STUDIO.sgponte:8788`，见下）。Ponte 在远端
+把 `<名字>.sgponte` 解析成 `127.0.0.1`，所以服务只监听 `127.0.0.1` 也够用。换台机器用
+`TERN_PONTE` 改名字，用隧道或别的地址就整个覆盖 `TERN_PUBLIC_URL`。
 
 ## 构建与发版
 
