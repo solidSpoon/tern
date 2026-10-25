@@ -6,6 +6,9 @@
 
 <p align="center">双语阅读 · Go + MyGo</p>
 
+<p align="center"><em>北极燕鸥一年往返两极，过两个夏天，见到的白昼比任何动物都多。<br>
+双语读者，也活在两个语言的夏天里。</em></p>
+
 把网页变成一篇中英对照的阅读页。桌面端是一个真正的 macOS App：除了**文章阅读页**用 Web 写，
 其余界面（文章列表、对话、生词本、设置、阅读工具条）全部由 [MyGo](https://github.com/egoist/mygo)
 的原生 UI 绘制；同一张阅读页也通过本机 HTTP 服务暴露给 iPhone 浏览器。
