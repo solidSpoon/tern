@@ -218,21 +218,22 @@ func (app *App) openWindow() {
 
 // ------------------------------------------------------------------ shell
 
-// applyTheme gives the native UI Tern's own ink and accent. Backgrounds stay
-// the system's: the app should sit on the platform, not on a color of its own.
-// The reading page repeats these values in its CSS tokens.
+// applyTheme gives the native UI the icon's two colors: the tile's teal for
+// what you press, the bill's terracotta for the small labels that name things.
+// Backgrounds stay the system's; the reading page repeats these values in its
+// CSS tokens.
 func (app *App) applyTheme(c *ui.Context) {
 	theme := *c.Theme()
 	if theme.Dark {
 		theme.Text = ui.Hex("#f1e7d4")
 		theme.TextMuted = ui.Hex("#8fa3a8")
-		theme.Accent = ui.Hex("#e8873c")
-		theme.AccentText = ui.Hex("#17110c")
+		theme.Accent = ui.Hex("#4e9aa7")
+		theme.AccentText = ui.Hex("#08191e")
 	} else {
 		theme.Text = ui.Hex("#122a31")
 		theme.TextMuted = ui.Hex("#6f8084")
-		theme.Accent = ui.Hex("#b4552a")
-		theme.AccentText = ui.Hex("#fff8ec")
+		theme.Accent = ui.Hex("#17505c")
+		theme.AccentText = ui.Hex("#f8f0dd")
 	}
 	theme.AccentHover = theme.Accent.Mix(ui.RGB(255, 255, 255), 0.14)
 	theme.AccentPressed = theme.Accent.Mix(ui.RGB(0, 0, 0), 0.16)

@@ -99,7 +99,7 @@ func hint(c *ui.Context, text string) {
 func (app *App) runtimeSection(c *ui.Context) {
 	t := c.Theme()
 	status := app.runtimeInfo
-	stateText, stateColor := "未安装", t.Warning
+	stateText, stateColor := "未安装", t.TextMuted
 	if status.Installed {
 		stateText, stateColor = "v"+status.Version, t.Success
 	}
@@ -163,7 +163,7 @@ func (app *App) runtimeSection(c *ui.Context) {
 func (app *App) modelSection(c *ui.Context) {
 	t := c.Theme()
 	agent := app.agent.Status()
-	stateText, stateColor := "非就绪", t.Warning
+	stateText, stateColor := "非就绪", t.TextMuted
 	if agent.Ready {
 		stateText, stateColor = "就绪", t.Success
 	}
