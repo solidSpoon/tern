@@ -93,6 +93,20 @@ Dock: `useDockIcon` reads `assets/brand/png/icon-dev-512.png` when
 comes from the bundle, the same way `mygo build` uses `icon.png` and
 `mygo build -debug` uses `icon-dev.png`.
 
+## Build and release
+
+`make app` builds `build/darwin-arm64/Tern.app` with `go tool mygo build
+-skip-dmg`; `make release V=0.1.1` is the release: it writes the version into
+`mygo.json`, runs `go test ./...`, builds the disk image, tags `v0.1.1`, pushes
+main and the tag, and publishes the `.dmg` with `gh release create`. Only the
+local macOS build is produced; the app is ad hoc signed unless `SIGN` names a
+Developer ID (`make release V=0.1.1 SIGN="Developer ID Application: …"`).
+
+`mygo.json` is the bundle's name, identifier, version and icon; the version in
+it is what the tag and the DMG name use. `resources/icon.png` (and
+`icon-dev.png`) are generated from `assets/brand` by the `icons` target, which
+every build runs — do not hand-edit them.
+
 Check the reading page at 390 px (single column, no sideways scroll) and
 1000+ px (two columns), with and without `embed=1`.
 

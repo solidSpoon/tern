@@ -51,7 +51,9 @@ go run ./tools/icon -try /tmp/x.png # 只画一张 1024 草稿，先看效果
 bundle 外（`mygo.App.IsPackaged()` 为假），就把 `png/icon-dev-512.png` 设成 Dock
 图标；打包成 `.app` 后不再干预，图标由 bundle 里的 `.icns` 提供。
 
-macOS 端把 `.icns` 交给打包步骤即可；网页端在 `internal/server/static/index.html`
+打包时不用手动塞 `.icns`：`make app` / `make release` 会把 `png/icon-1024.png` 复制成
+`resources/icon.png`（开发包用 `icon-dev.png`），MyGo 自己转成 bundle 里的
+`AppIcon.icns`；`macos/*.icns` 留给别的打包方式用。网页端在 `internal/server/static/index.html`
 的 `<head>` 里加：
 
 ```html

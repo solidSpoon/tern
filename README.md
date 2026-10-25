@@ -34,6 +34,21 @@ go run . --headless          # 只跑阅读服务，供手机 / 浏览器访问
 手机：让 Surge Ponte（或任意隧道）把 `studio.sgponte:8787` 指到本机 8787，然后用 iPhone
 打开 `http://studio.sgponte:8787`。服务只监听 `127.0.0.1` 时就已够用，Ponte 在本机解析它。
 
+## 构建与发版
+
+```bash
+make app                  # 本机 .app（build/darwin-arm64/Tern.app），不出 DMG
+make release V=0.1.1      # 写版本号 → 测试 → 打 DMG → 打 tag → 推 GitHub Release
+```
+
+只出本机 macOS 的包（当前 arm64）：`go tool mygo build` 生成 `.app` 和
+`Tern <版本> <架构>.dmg`，版本号取自 `mygo.json`，tag 是 `v<版本>`。没有 Developer ID
+时是 ad hoc 签名，别人下载后需要右键「打开」；有证书时：
+
+```bash
+make release V=0.1.1 SIGN="Developer ID Application: Name (TEAMID)"
+```
+
 ## 桌面端的分工
 
 ```
