@@ -8,10 +8,42 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 )
+
+// userPath is the PATH the agent's shell gets. A GUI app starts with launchd's
+// PATH (/usr/bin:/bin:/usr/sbin:/sbin), so the tools the reader installed for
+// their terminal — ego-browser in ~/.local/bin, Homebrew — would be missing,
+// and the agent would go looking for them across the disk.
+func userPath() string {
+	home, _ := os.UserHomeDir()
+	dirs := []string{
+		filepath.Join(home, ".local", "bin"),
+		filepath.Join(home, "bin"),
+		"/opt/homebrew/bin",
+		"/usr/local/bin",
+	}
+	if p := os.Getenv("PATH"); p != "" {
+		dirs = append(dirs, p)
+	}
+	return strings.Join(dirs, string(os.PathListSeparator))
+}
+
+// withoutPath drops PATH from env, so userPath replaces it instead of sitting
+// beside it: with two PATHs the child's getenv would pick the first.
+func withoutPath(env []string) []string {
+	out := make([]string, 0, len(env))
+	for _, kv := range env {
+		if strings.HasPrefix(kv, "PATH=") {
+			continue
+		}
+		out = append(out, kv)
+	}
+	return out
+}
 
 // Event is one JSONL record Pi writes to stdout.
 type Event map[string]any
@@ -93,7 +125,8 @@ func (r *Runtime) Start(opts ClientOptions) (*Client, error) {
 
 	cmd := exec.Command(binary, args...)
 	cmd.Dir = opts.Cwd
-	env := append(os.Environ(),
+	env := append(withoutPath(os.Environ()),
+		"PATH="+userPath(),
 		keyEnv+"="+opts.APIKey,
 		"PI_NO_UPDATE_CHECK=1",
 		"NO_COLOR=1",

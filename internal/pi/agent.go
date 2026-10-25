@@ -342,7 +342,10 @@ Do this in order:
 1. Get the text: use ego-browser to open the page and extract the article body. How is up to you —
    run ` + "`ego-browser skill`" + ` first to see how it works (taskSpace / page.goto / page.evaluate),
    write a .mjs script and run it with ` + "`ego-browser nodejs < script.mjs`" + `, and save the result in the working directory.
-   If it fails, try other selectors, wait for rendering, or fall back to curl. If the text really cannot be had, say so — never invent content.
+   Check it with ` + "`command -v ego-browser`" + ` first. If that is empty, do not go looking for the
+   program — fetch the page with curl instead. If a selector fails, try others and wait for rendering.
+   Stay inside the working directory: never scan the disk, the home folder or other apps.
+   If the text really cannot be had, say so — never invent content.
 
 2. Structure it: write the body into article.json in the working directory. Rules:
    - Keep the blocks in the order of the original, with paragraphs **1:1**: never merge two paragraphs into one.

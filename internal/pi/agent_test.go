@@ -16,6 +16,8 @@ func TestIngestPrompt(t *testing.T) {
 		"publish_article",
 		"1:1",
 		"glossary",
+		"command -v ego-browser",
+		"never scan the disk",
 	} {
 		if !strings.Contains(prompt, want) {
 			t.Errorf("the prompt does not mention %q", want)
