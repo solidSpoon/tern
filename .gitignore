@@ -1,0 +1,18 @@
+# Data and media live beside the app, not in git.
+data/
+media/
+
+# Build output
+/tern-go
+/tern
+/build/
+dist/
+
+# Stale tool binaries from earlier builds
+/brandgen
+/icon
+
+# MyGo development bundles
+/.mygo/
+
+.DS_Store

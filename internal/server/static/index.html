@@ -1,0 +1,1501 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<meta name="theme-color" content="#fbfbfb" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#111112" media="(prefers-color-scheme: dark)" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Tern" />
+<meta name="format-detection" content="telephone=no" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23fbfbfb'/%3E%3Cpath d='M18 26c8-7 20-7 28 0-8 7-20 7-28 0Z' fill='none' stroke='%23a1401f' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M22 36c6 5 14 5 20 0' fill='none' stroke='%2316161a' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
+<title>Tern · 双语阅读</title>
+<script>
+  // The desktop embeds this page in a native window (ui.WebView). In that
+  // mode the native toolbar owns the reading controls, so the page hides its
+  // own chrome and takes its mode and size from the URL.
+  (function () {
+    var params = new URLSearchParams(location.search);
+    if (params.get("embed") === "1") {
+      document.documentElement.classList.add("embed");
+    }
+  })();
+</script>
+<style>
+/* ------------------------------------------------------------------ tokens */
+:root {
+  --paper: #fbfbfb;
+  --paper-2: #f2f1ee;
+  --paper-3: #eae9e5;
+  --ink: #17171a;
+  --ink-2: #4c4c50;
+  --ink-3: #8b8b8f;
+  --rule: #e5e4e0;
+  --rule-strong: #d5d4cf;
+  --accent: #a1401f;
+  --accent-soft: rgba(161, 64, 31, 0.1);
+
+  --serif: 'Iowan Old Style', 'Palatino Linotype', 'Songti SC', 'Source Han Serif SC',
+    'Noto Serif CJK SC', Georgia, serif;
+  --sans: system-ui, -apple-system, 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --masthead-h: 54px;
+  --page-max: 1180px;
+  --measure: 40em;
+  --read-scale: 1;
+  --radius: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #111112;
+    --paper-2: #1a1a1c;
+    --paper-3: #232326;
+    --ink: #e9e9ec;
+    --ink-2: #b3b3b7;
+    --ink-3: #7e7e83;
+    --rule: #2a2a2d;
+    --rule-strong: #3a3a3e;
+    --accent: #e2835c;
+    --accent-soft: rgba(226, 131, 92, 0.14);
+  }
+}
+
+* { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection { background: var(--accent-soft); }
+
+button, a, input { touch-action: manipulation; }
+
+a { color: inherit; }
+
+button { font: inherit; color: inherit; }
+
+img { max-width: 100%; display: block; }
+
+/* ------------------------------------------------------------------ masthead */
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 70;
+  height: var(--masthead-h);
+  background: color-mix(in oklab, var(--paper) 94%, transparent);
+  border-bottom: 1px solid var(--rule);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  padding-top: env(safe-area-inset-top);
+}
+
+.masthead__inner {
+  max-width: var(--page-max);
+  height: var(--masthead-h);
+  margin: 0 auto;
+  padding: 0 22px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.wordmark {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.wordmark__mark {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.wordmark__tag {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.masthead__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.nav { display: flex; align-items: center; gap: 16px; }
+
+.nav__link {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  text-decoration: none;
+  padding: 4px 0;
+  border-bottom: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.nav__link.is-active { color: var(--ink); border-bottom-color: var(--ink); }
+
+.masthead__back {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-left: -6px;
+  border-radius: 50%;
+  color: var(--ink-2);
+  text-decoration: none;
+  font-size: 15px;
+}
+
+.masthead__back:hover { background: var(--paper-2); }
+
+/* ------------------------------------------------------------------ page */
+.page {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 0 22px calc(80px + env(safe-area-inset-bottom));
+}
+
+.kicker {
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.mono { font-family: var(--mono); }
+
+/* ------------------------------------------------------------------ feed */
+.feed-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 26px 0 16px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 28px;
+}
+
+.feed-head .kicker { color: var(--ink-3); }
+
+.feed-head__hint { font-size: 11.5px; color: var(--ink-3); }
+
+/* A line for loading, hints and errors: always there, so showing one never
+   moves the grid below it. */
+.status-line {
+  min-height: 18px;
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+.status-line.is-error { color: var(--accent); }
+
+.feed-empty {
+  max-width: 520px;
+  padding: 34px 0 60px;
+}
+
+.feed-empty h1 {
+  margin: 8px 0;
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.feed-empty p {
+  margin: 0 0 18px;
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: var(--ink-2);
+}
+
+.feed {
+  columns: 3 302px;
+  column-gap: 34px;
+}
+
+.card {
+  break-inside: avoid;
+  margin: 0 0 40px;
+  animation: rise 0.55s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.card__link { display: block; text-decoration: none; color: inherit; }
+
+.card__cover {
+  overflow: hidden;
+  background: var(--paper-2);
+  border-radius: var(--radius);
+}
+
+.card__cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.card__link:hover .card__cover img { transform: scale(1.03); }
+
+.card__body { padding-top: 14px; }
+
+.card__title {
+  margin: 7px 0 0;
+  font-family: var(--serif);
+  font-size: 21px;
+  line-height: 1.34;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  text-wrap: pretty;
+}
+
+.card__title-en {
+  margin: 7px 0 0;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-3);
+  text-wrap: pretty;
+}
+
+.card__summary {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card__meta {
+  margin: 12px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
+/* ------------------------------------------------------------------ skeletons */
+.skeleton { animation: none; }
+
+.line {
+  height: 12px;
+  border-radius: 3px;
+  background: var(--paper-2);
+  margin: 10px 0;
+}
+
+.line--short { width: 30%; }
+.line--mid { width: 68%; }
+.line--title { height: 26px; width: 84%; }
+
+.article--loading .cover-skeleton {
+  margin: 28px 0 0;
+  aspect-ratio: 3 / 2;
+  border-radius: var(--radius);
+  background: var(--paper-2);
+}
+
+.article--loading .line { margin: 12px 0; }
+
+/* ------------------------------------------------------------------ article */
+.progress {
+  position: fixed;
+  top: calc(var(--masthead-h) + env(safe-area-inset-top) - 2px);
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 80;
+  pointer-events: none;
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  transition: transform 0.12s linear;
+}
+
+.article {
+  max-width: 720px;
+  margin: 0 auto;
+  padding-top: 40px;
+}
+
+.article__kicker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.article__title {
+  margin: 15px 0 0;
+  font-family: var(--serif);
+  font-size: clamp(27px, 4.6vw, 40px);
+  line-height: 1.26;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+}
+
+.article__title-en {
+  margin: 11px 0 0;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(15px, 2vw, 18px);
+  line-height: 1.5;
+  color: var(--ink-3);
+  text-wrap: pretty;
+}
+
+.article__meta {
+  margin: 17px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
+  color: var(--ink-3);
+}
+
+.article__hint { margin: 13px 0 0; font-size: 11.5px; color: var(--ink-3); }
+
+.article__cover { margin: 28px 0 4px; }
+
+.article__cover img { width: 100%; border-radius: var(--radius); }
+
+.article__body { margin-top: 32px; }
+
+.block--p { margin: 0 0 26px; }
+
+.t--zh {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: calc(1.0625rem * var(--read-scale));
+  line-height: 1.9;
+  color: var(--ink);
+  letter-spacing: 0.012em;
+  text-wrap: pretty;
+}
+
+.t--en {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: calc(1.005rem * var(--read-scale));
+  line-height: 1.74;
+  font-weight: 450;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+[data-en-block] { cursor: pointer; }
+
+.article[data-mode='dual'] .block--p .t--en + .t--zh { margin-top: 10px; }
+
+.article[data-mode='zh'] .block--p,
+.article[data-mode='en'] .block--p { max-width: var(--measure); }
+
+.block--h2 {
+  margin: 44px 0 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.block--h2 .t--zh { font-size: calc(1.16rem * var(--read-scale)); line-height: 1.5; }
+
+.block--h2 .t--en {
+  font-size: calc(1.05rem * var(--read-scale));
+  line-height: 1.5;
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.block--figure { margin: 32px 0; }
+
+.block--figure img { width: 100%; border-radius: var(--radius); }
+
+.block--figure figcaption {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-3);
+}
+
+.figcaption-en { display: block; font-size: 11.5px; opacity: 0.85; }
+
+.block--quote {
+  margin: 30px 0;
+  padding: 4px 0 4px 20px;
+  border-left: 2px solid var(--accent);
+}
+
+.block--quote .t--en { margin-top: 8px; }
+
+.block--quote cite {
+  display: block;
+  margin-top: 10px;
+  font-size: 11.5px;
+  font-style: normal;
+  color: var(--ink-3);
+}
+
+.block--list { margin: 0 0 26px; padding-left: 1.15em; }
+
+.block--list li { margin: 9px 0; }
+
+.block--list .t--en { display: block; margin-top: 2px; font-size: calc(0.95rem * var(--read-scale)); }
+
+.note {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--paper-2);
+  border-radius: var(--radius);
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--ink-2);
+}
+
+.note__label {
+  display: inline-block;
+  margin-right: 8px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+
+.article__foot {
+  margin-top: 52px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.article__summary {
+  margin: 0 0 14px;
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--ink-2);
+}
+
+.article__foot a {
+  color: var(--ink-2);
+  text-decoration: none;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* ------------------------------------------------------------------ toolbar */
+.toolbar { display: flex; align-items: center; gap: 8px; user-select: none; -webkit-user-select: none; }
+
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+}
+
+.segmented__item {
+  border: none;
+  background: none;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11.5px;
+  color: var(--ink-2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.segmented__item.is-active { background: var(--ink); color: var(--paper); }
+
+.toolbar__size { display: flex; gap: 4px; }
+
+.icon {
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11.5px;
+  color: var(--ink-2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.icon:active { background: var(--paper-2); }
+
+.icon:disabled { opacity: 0.4; cursor: default; }
+
+/* ------------------------------------------------------------------ popover */
+.popover__scrim { position: fixed; inset: 0; z-index: 90; background: transparent; }
+
+.popover {
+  position: fixed;
+  z-index: 91;
+  width: min(330px, calc(100vw - 24px));
+  /* Enough room for a lookup in progress, so it grows less when the entry
+     arrives. */
+  min-height: 120px;
+  padding: 14px 16px 12px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06), 0 20px 48px rgba(0, 0, 0, 0.18);
+  animation: pop 0.16s ease both;
+}
+
+.popover__head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+
+.popover__term { font-family: var(--serif); font-size: 18px; font-weight: 600; }
+
+.popover__phonetic { font-size: 12px; color: var(--ink-3); }
+
+.popover__pos { font-size: 10.5px; letter-spacing: 0.08em; color: var(--accent); }
+
+.popover__def { margin: 10px 0 0; font-size: 14.5px; line-height: 1.7; }
+
+.popover__gloss { margin: 4px 0 0; font-size: 12.5px; font-style: italic; color: var(--ink-3); }
+
+.popover__hint, .popover__error { margin: 10px 0 0; font-size: 12.5px; color: var(--ink-3); }
+
+.popover__error { color: var(--accent); line-height: 1.6; }
+
+.popover__example {
+  margin-top: 11px;
+  padding: 9px 11px;
+  background: var(--paper-2);
+  border-radius: 4px;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+
+.popover__example p { margin: 0; }
+
+.popover__example-zh { margin-top: 4px !important; color: var(--ink-3); }
+
+.popover__actions { display: flex; gap: 8px; margin-top: 13px; }
+
+.chip {
+  border: 1px solid transparent;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.chip:disabled { opacity: 0.55; cursor: default; }
+
+.chip--ghost { background: transparent; color: var(--ink-2); border-color: var(--rule); }
+
+/* ------------------------------------------------------------------ vocab */
+.panel { max-width: 640px; margin: 0 auto; padding-top: 46px; }
+
+.panel__title {
+  margin: 12px 0 10px;
+  font-family: var(--serif);
+  font-size: clamp(26px, 4vw, 34px);
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+.panel__lede { margin: 0 0 26px; font-size: 14px; line-height: 1.8; color: var(--ink-2); }
+
+.vocab { list-style: none; margin: 0; padding: 0; }
+
+.vocab__item { padding: 18px 0 16px; border-top: 1px solid var(--rule); }
+
+.vocab__head { display: flex; align-items: baseline; gap: 10px; }
+
+.vocab__head strong { font-family: var(--serif); font-size: 18px; font-weight: 600; }
+
+.vocab__phonetic { font-size: 12px; color: var(--ink-3); }
+
+.vocab__remove {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 19px;
+  line-height: 1;
+  color: var(--ink-3);
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.vocab__def { margin: 6px 0 0; font-size: 14px; }
+
+.vocab__gloss { margin: 3px 0 0; font-size: 12.5px; font-style: italic; color: var(--ink-3); }
+
+.vocab__example { margin: 9px 0 0; font-size: 12.5px; line-height: 1.65; color: var(--ink-2); }
+
+.vocab__example span { display: block; margin-top: 2px; color: var(--ink-3); }
+
+.empty { max-width: 520px; margin: 90px auto; text-align: center; }
+
+.empty h1 { margin: 10px 0; font-family: var(--serif); font-size: 27px; font-weight: 600; }
+
+.empty p { margin: 0 0 20px; font-size: 14px; line-height: 1.8; color: var(--ink-2); }
+
+.empty--inline { margin: 26px 0; text-align: left; font-size: 13px; color: var(--ink-3); }
+
+.link { color: var(--accent); text-decoration: none; }
+
+/* ------------------------------------------------------------------ dual layout */
+@media (min-width: 1000px) {
+  .article[data-mode='dual'] { max-width: 1060px; }
+
+  .article[data-mode='dual'] .block--p {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 0;
+    align-items: start;
+  }
+
+  .article[data-mode='dual'] .block--p .t--en { padding-right: 30px; }
+
+  .article[data-mode='dual'] .block--p .t--zh {
+    padding-left: 30px;
+    border-left: 1px solid var(--rule);
+  }
+
+  .article[data-mode='dual'] .block--p .note { grid-column: 1 / -1; }
+
+  .article[data-mode='dual'] .block--h2 { display: grid; grid-template-columns: 1fr 1fr; }
+
+  .article[data-mode='dual'] .block--h2 .t--en { padding-right: 30px; }
+
+  .article[data-mode='dual'] .block--h2 .t--zh { padding-left: 30px; border-left: 1px solid var(--rule); }
+
+  .article[data-mode='dual'] .article__head,
+  .article[data-mode='dual'] .article__cover,
+  .article[data-mode='dual'] .article__foot { max-width: 720px; margin-inline: auto; }
+}
+
+/* ------------------------------------------------------------------ embed */
+/* An embedded reader is narrower than the window (the sidebar takes 220 of
+   it), so the two-column comparison comes earlier there. */
+@media (min-width: 780px) {
+  html.embed .article[data-mode='dual'] { max-width: 1060px; }
+
+  html.embed .article[data-mode='dual'] .block--p {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 0;
+    align-items: start;
+  }
+
+  html.embed .article[data-mode='dual'] .block--p .t--en { padding-right: 30px; }
+
+  html.embed .article[data-mode='dual'] .block--p .t--zh {
+    padding-left: 30px;
+    border-left: 1px solid var(--rule);
+  }
+
+  html.embed .article[data-mode='dual'] .block--p .note { grid-column: 1 / -1; }
+
+  html.embed .article[data-mode='dual'] .block--h2 { display: grid; grid-template-columns: 1fr 1fr; }
+
+  html.embed .article[data-mode='dual'] .block--h2 .t--en { padding-right: 30px; }
+
+  html.embed .article[data-mode='dual'] .block--h2 .t--zh { padding-left: 30px; border-left: 1px solid var(--rule); }
+
+  html.embed .article[data-mode='dual'] .article__head,
+  html.embed .article[data-mode='dual'] .article__cover,
+  html.embed .article[data-mode='dual'] .article__foot { max-width: 720px; margin-inline: auto; }
+}
+
+
+/* The reading page inside the desktop window: the native toolbar above it
+   owns the mode and the size, so the page keeps only the document. */
+html.embed .masthead { display: none; }
+html.embed .progress { top: 0; }
+html.embed .page { padding: 0 26px 32px; }
+html.embed .article { padding-top: 6px; }
+html.embed .article__kicker { padding-top: 14px; }
+html.embed .back-home { display: none; }
+html.embed .article__foot { margin-top: 34px; }
+html.embed .article__foot a { display: none; }
+
+/* ------------------------------------------------------------------ phone */
+@media (max-width: 720px) {
+  :root { --masthead-h: 50px; }
+
+  .masthead__inner { padding: 0 16px; gap: 10px; }
+
+  .wordmark__tag { display: none; }
+
+  .nav { gap: 14px; }
+
+  .nav__link { font-size: 12px; }
+
+  .page { padding: 0 16px calc(56px + env(safe-area-inset-bottom)); }
+
+  .feed { columns: 1; }
+
+  .feed-head { padding: 18px 0 13px; margin-bottom: 22px; }
+
+  .feed-head__hint { display: none; }
+
+  .card { margin-bottom: 32px; }
+
+  .card__title { font-size: 20px; }
+
+  .article { padding-top: 24px; }
+
+  .article__title { font-size: clamp(24px, 7.2vw, 30px); }
+
+  .article__body { margin-top: 26px; }
+
+  .t--zh { line-height: 1.94; }
+
+  .panel { padding-top: 30px; }
+
+  /* The article page keeps the reader toolbar in the masthead: the nav links
+     would not fit beside it on a phone. */
+  .masthead--article .nav { display: none; }
+
+  .toolbar { gap: 6px; }
+
+  .segmented__item { padding: 3px 9px; }
+
+  .empty { margin: 60px auto; }
+}
+
+@media (max-width: 380px) {
+  .toolbar__size .icon:first-child { display: none; }
+}
+
+/* ------------------------------------------------------------------ motion */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(9px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Transform only: an opacity animation could be caught half-way by a
+   screenshot or a throttled tab, leaving a see-through panel. */
+@keyframes pop {
+  from { transform: translateY(5px) scale(0.985); }
+  to { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001s !important; transition-duration: 0.001s !important; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+<header class="masthead" id="masthead">
+  <div class="masthead__inner">
+    <a class="wordmark" href="/" aria-label="Tern 首页">
+      <span class="wordmark__mark">Tern</span>
+      <span class="wordmark__tag">双语阅读</span>
+    </a>
+    <div class="masthead__right" id="masthead-right">
+      <nav class="nav">
+        <a class="nav__link" href="/" data-nav="home">首页</a>
+        <a class="nav__link" href="/vocab" data-nav="vocab">生词本</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main class="page" id="page"></main>
+
+<div id="overlay"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ------------------------------------------------------------------ state
+  const MODE_KEY = 'tern:mode';
+  const SIZE_KEY = 'tern:size';
+  const MODES = ['dual', 'zh', 'en'];
+  const SIZES = ['sm', 'md', 'lg'];
+  const SCALE = { sm: 0.94, md: 1, lg: 1.12 };
+
+  const read = (key, allowed, fallback) => {
+    const saved = localStorage.getItem(key);
+    return allowed.includes(saved) ? saved : fallback;
+  };
+
+  const params = new URLSearchParams(location.search);
+  const EMBEDDED = document.documentElement.classList.contains('embed');
+  const fromURL = (key, allowed) => {
+    const value = params.get(key);
+    return allowed.includes(value) ? value : null;
+  };
+
+  const reader = {
+    mode: fromURL('mode', MODES) || read(MODE_KEY, MODES, 'dual'),
+    size: fromURL('size', SIZES) || read(SIZE_KEY, SIZES, 'md'),
+  };
+
+  const page = document.getElementById('page');
+  const overlay = document.getElementById('overlay');
+  const right = document.getElementById('masthead-right');
+
+  const esc = (value) =>
+    String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+  const formatDate = (iso, dots) => {
+    if (!iso) return '';
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    if (dots) return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())}`;
+    return `${date.getFullYear()} 年 ${date.getMonth() + 1} 月 ${date.getDate()} 日`;
+  };
+
+  async function api(path, options) {
+    const response = await fetch(path, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...(options && options.headers) },
+      signal: AbortSignal.timeout(options && options.method === 'POST' ? 240000 : 20000),
+    });
+    const text = await response.text();
+    let data = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
+    if (!response.ok) throw new Error(data.error || `请求失败（${response.status}）`);
+    return data;
+  }
+
+  // ------------------------------------------------------------------ chrome
+  function setNav(active) {
+    document.querySelectorAll('[data-nav]').forEach((link) => {
+      link.classList.toggle('is-active', link.dataset.nav === active);
+    });
+  }
+
+  // Scroll positions: coming back to the feed or an article should not jump to
+  // the top, so each page keeps its own offset for the session.
+  const posKey = (suffix) => `tern:pos:${location.pathname}${suffix || ''}`;
+
+  function watchScroll() {
+    let frame = 0;
+    const save = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        sessionStorage.setItem(posKey(), String(window.scrollY));
+        const bar = document.querySelector('.progress span');
+        if (bar) {
+          const max = document.documentElement.scrollHeight - window.innerHeight;
+          const ratio = max > 0 ? Math.min(1, window.scrollY / max) : 0;
+          bar.style.transform = `scaleX(${ratio})`;
+        }
+      });
+    };
+    window.addEventListener('scroll', save, { passive: true });
+    return save;
+  }
+
+  function restoreScroll() {
+    const saved = Number(sessionStorage.getItem(posKey()) || '0');
+    if (saved > 0) requestAnimationFrame(() => window.scrollTo(0, saved));
+  }
+
+  // ------------------------------------------------------------------ feed
+  function card(article) {
+    const ratio =
+      article.cover && article.cover.ratio
+        ? article.cover.ratio
+        : ['4 / 3', '3 / 2', '1 / 1', '5 / 4'][hash(article.id) % 4];
+    const cover = article.cover
+      ? `<div class="card__cover" style="aspect-ratio:${ratio}">
+           <img src="${esc(article.cover.src)}" alt="${esc(article.cover.alt || '')}" loading="lazy" decoding="async" />
+         </div>`
+      : '';
+    return `<article class="card">
+      <a class="card__link" href="/a/${encodeURIComponent(article.id)}">
+        ${cover}
+        <div class="card__body">
+          ${article.tags && article.tags[0] ? `<span class="kicker">${esc(article.tags[0])}</span>` : ''}
+          <h2 class="card__title">${esc(article.title.zh)}</h2>
+          ${article.title.en ? `<p class="card__title-en">${esc(article.title.en)}</p>` : ''}
+          <p class="card__summary">${esc(article.summary.zh || article.summary.en)}</p>
+          <p class="card__meta">
+            ${article.source.site ? `<span>${esc(article.source.site)}</span>` : ''}
+            <span>${esc(formatDate(article.source.publishedAt || article.createdAt, true))}</span>
+            <span>${article.paragraphCount} 段</span>
+            ${article.vocab && article.vocab.length ? `<span>${article.vocab.length} 生词</span>` : ''}
+          </p>
+        </div>
+      </a>
+    </article>`;
+  }
+
+  function hash(text) {
+    let h = 0;
+    for (const ch of text) h = (h * 31 + ch.charCodeAt(0)) % 997;
+    return h;
+  }
+
+  function skeletons(count) {
+    return Array.from({ length: count })
+      .map(
+        () => `<div class="card skeleton">
+          <div class="card__cover" style="aspect-ratio:4 / 3"></div>
+          <div class="card__body">
+            <div class="line line--short"></div>
+            <div class="line line--title"></div>
+            <div class="line line--mid"></div>
+          </div>
+        </div>`,
+      )
+      .join('');
+  }
+
+  async function renderHome() {
+    document.title = 'Tern · 双语阅读';
+    setNav('home');
+    // The head and the status line exist before the data: loading, failing and
+    // the feed itself all start at the same place.
+    page.innerHTML = `
+      <div class="feed-head">
+        <span class="kicker" id="feed-count">今日 · 篇</span>
+        <span class="feed-head__hint">点击卡片进入双语对照</span>
+      </div>
+      <p class="status-line" id="feed-status"></p>
+      <section class="feed" id="feed">${skeletons(6)}</section>`;
+
+    const status = document.getElementById('feed-status');
+    const feed = document.getElementById('feed');
+    const count = document.getElementById('feed-count');
+
+    let articles;
+    try {
+      ({ articles } = await api('/api/articles'));
+    } catch (error) {
+      status.textContent = error.message;
+      status.classList.add('is-error');
+      feed.innerHTML = '';
+      return;
+    }
+
+    count.textContent = `今日 ${articles.length} 篇`;
+    if (!articles.length) {
+      feed.innerHTML = `<div class="feed-empty">
+        <span class="kicker">Tern</span>
+        <h1>还没有文章</h1>
+        <p>在桌面端 Tern 的「对话」里贴一个网页链接，Agent 会把它排成中英对照的一篇。</p>
+      </div>`;
+      return;
+    }
+
+    feed.innerHTML = articles.map(card).join('');
+    restoreScroll();
+  }
+
+  // ------------------------------------------------------------------ article
+  function toolbar(articleId) {
+    return `<div class="toolbar">
+      <div class="segmented" role="group" aria-label="阅读模式">
+        <button class="segmented__item" data-mode="dual">对照</button>
+        <button class="segmented__item" data-mode="zh">译文</button>
+        <button class="segmented__item" data-mode="en">原文</button>
+      </div>
+      <div class="toolbar__size">
+        <button class="icon" data-size="smaller" aria-label="缩小字号">A−</button>
+        <button class="icon" data-size="larger" aria-label="放大字号">A+</button>
+      </div>
+    </div>`;
+  }
+
+  function syncToolbar(article) {
+    document.querySelectorAll('[data-mode]').forEach((button) => {
+      button.classList.toggle('is-active', button.dataset.mode === reader.mode);
+    });
+    const host = document.querySelector('.article');
+    if (host) {
+      host.dataset.mode = reader.mode;
+      host.dataset.size = reader.size;
+      host.style.setProperty('--read-scale', SCALE[reader.size]);
+    }
+    const hint = document.querySelector('.article__hint');
+    if (hint && article) {
+      hint.textContent = reader.mode === 'zh' ? '切到对照可点词查释义' : '点英文单词查释义';
+    }
+    const smaller = document.querySelector('[data-size="smaller"]');
+    const larger = document.querySelector('[data-size="larger"]');
+    if (smaller) smaller.disabled = reader.size === SIZES[0];
+    if (larger) larger.disabled = reader.size === SIZES[SIZES.length - 1];
+  }
+
+  function bindToolbar(article, repaint) {
+    document.querySelectorAll('[data-mode]').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (reader.mode === button.dataset.mode) return;
+        reader.mode = button.dataset.mode;
+        localStorage.setItem(MODE_KEY, reader.mode);
+        // Only the blocks change with the mode, so rebuild just the body: the
+        // page keeps its scroll offset and the toolbar its state.
+        repaint();
+      });
+    });
+    document.querySelectorAll('[data-size]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const step = button.dataset.size === 'larger' ? 1 : -1;
+        const index = Math.max(0, Math.min(SIZES.length - 1, SIZES.indexOf(reader.size) + step));
+        reader.size = SIZES[index];
+        localStorage.setItem(SIZE_KEY, reader.size);
+        syncToolbar(article);
+      });
+    });
+  }
+
+  function blockHTML(block) {
+    const en = reader.mode !== 'zh' && block.en ? `<p class="t t--en" data-en-block="${esc(block.id)}">${esc(block.en)}</p>` : '';
+    const zh = reader.mode !== 'en' ? `<p class="t t--zh">${esc(block.zh)}</p>` : '';
+
+    switch (block.type) {
+      case 'p':
+        return `<div class="block block--p">
+          ${en}${zh}
+          ${block.note ? `<aside class="note"><span class="note__label">注</span>${esc(block.note)}</aside>` : ''}
+        </div>`;
+      case 'h2': {
+        // A heading stays a section marker in every mode: the English one in
+        // 原文, the Chinese one otherwise.
+        const showEN = reader.mode !== 'zh' && Boolean(block.en);
+        const showZH = reader.mode !== 'en' || !block.en;
+        return `<h2 class="block block--h2">
+          ${showEN ? `<span class="t t--en">${esc(block.en)}</span>` : ''}
+          ${showZH ? `<span class="t t--zh">${esc(block.zh)}</span>` : ''}
+        </h2>`;
+      }
+      case 'image':
+        return `<figure class="block block--figure">
+          <img src="${esc(block.src)}" alt="${esc(block.alt || '')}" loading="lazy" decoding="async" />
+          ${block.caption && block.caption.zh
+            ? `<figcaption>${esc(block.caption.zh)}${
+                reader.mode !== 'zh' && block.caption.en
+                  ? `<span class="figcaption-en">${esc(block.caption.en)}</span>`
+                  : ''
+              }</figcaption>`
+            : ''}
+        </figure>`;
+      case 'quote':
+        return `<blockquote class="block block--quote">
+          ${en}${zh}${block.cite ? `<cite>${esc(block.cite)}</cite>` : ''}
+        </blockquote>`;
+      case 'list':
+        return `<ul class="block block--list">
+          ${(block.items || [])
+            .map(
+              (item) => `<li>
+                ${reader.mode !== 'zh' && item.en ? `<span class="t t--en">${esc(item.en)}</span>` : ''}
+                ${reader.mode !== 'en' ? `<span class="t t--zh">${esc(item.zh)}</span>` : ''}
+              </li>`,
+            )
+            .join('')}
+        </ul>`;
+      default:
+        return '';
+    }
+  }
+
+  function articleHTML(article) {
+    const words = article.blocks.reduce(
+      (n, block) => n + (block.en ? block.en.split(/\s+/).filter(Boolean).length : 0),
+      0,
+    );
+    const minutes = Math.max(1, Math.round(words / 220));
+    return `<div class="progress" aria-hidden="true"><span></span></div>
+    <article class="article" data-mode="${reader.mode}" data-size="${reader.size}"
+             style="--read-scale:${SCALE[reader.size]}">
+      <header class="article__head">
+        <div class="article__kicker">
+          <a class="nav__link back-home" href="/">← 首页</a>
+          ${(article.tags || []).map((tag) => `<span class="kicker">${esc(tag)}</span>`).join('')}
+        </div>
+        <h1 class="article__title">${esc(article.title.zh)}</h1>
+        ${article.title.en ? `<p class="article__title-en">${esc(article.title.en)}</p>` : ''}
+        <p class="article__meta">
+          ${article.source.site ? `<span>${esc(article.source.site)}</span>` : ''}
+          ${article.source.author ? `<span>${esc(article.source.author)}</span>` : ''}
+          <span>${esc(formatDate(article.source.publishedAt || article.createdAt, false))}</span>
+          <span>约 ${minutes} 分钟</span>
+          <span>${words} 词</span>
+        </p>
+        <p class="article__hint">${reader.mode === 'zh' ? '切到对照可点词查释义' : '点英文单词查释义'}</p>
+      </header>
+      ${article.cover ? `<figure class="article__cover"><img src="${esc(article.cover.src)}" alt="${esc(article.cover.alt || '')}" decoding="async" /></figure>` : ''}
+      <div class="article__body">${article.blocks.map(blockHTML).join('')}</div>
+      <footer class="article__foot">
+        <p class="article__summary">${esc(article.summary.zh || article.summary.en)}</p>
+        <a href="${esc(article.source.url || '#')}" target="_blank" rel="noreferrer noopener">原文出处 ↗</a>
+      </footer>
+    </article>`;
+  }
+
+  async function renderArticle(id) {
+    setNav('');
+    document.getElementById('masthead').classList.add('masthead--article');
+    if (!EMBEDDED) right.insertAdjacentHTML('afterbegin', toolbar(id));
+
+    // A page-shaped skeleton: the header does not jump when the article lands.
+    page.innerHTML = `<article class="article article--loading" aria-busy="true">
+      <div class="line line--short"></div>
+      <div class="line line--title"></div>
+      <div class="line" style="height:15px;width:52%"></div>
+      <div class="line line--mid"></div>
+      <div class="cover-skeleton"></div>
+      <div class="line"></div>
+      <div class="line line--mid"></div>
+    </article>`;
+
+    let article;
+    try {
+      ({ article } = await api(`/api/articles/${encodeURIComponent(id)}`));
+    } catch (error) {
+      page.innerHTML = `<article class="article">
+        <header class="article__head">
+          <div class="article__kicker"><a class="nav__link back-home" href="/">← 首页</a></div>
+          <h1 class="article__title">打不开这篇</h1>
+        </header>
+        <p class="status-line is-error">${esc(error.message)}</p>
+      </article>`;
+      return;
+    }
+
+    document.title = `${article.title.zh} · Tern`;
+    const lookup = createLookup(article);
+
+    const paintBody = (keepScroll) => {
+      const offset = keepScroll ? window.scrollY : 0;
+      page.innerHTML = articleHTML(article);
+      syncToolbar(article);
+      document.querySelector('.article__body').addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        if (!target.closest('[data-en-block]')) return;
+        const selection = window.getSelection();
+        if (selection && String(selection).trim()) return;
+        const hit = wordFromPoint(event.clientX, event.clientY);
+        if (hit) lookup.show(hit);
+      });
+      // Switching 对照/译文/原文 changes the body's height; keeping the offset
+      // keeps the paragraph the reader was on.
+      if (offset > 0) window.scrollTo(0, offset);
+    };
+
+    repaintArticle = () => paintBody(true);
+    bindToolbar(article, () => paintBody(true));
+    paintBody(false);
+    watchScroll();
+    restoreScroll();
+  }
+
+  // ------------------------------------------------------------------ words
+  const isWordChar = (ch) => /[A-Za-z'’-]/.test(ch);
+
+  /** From a click, read the character under the pointer, then grow to the word
+   *  around it: no <span> per word, native selection stays intact. */
+  function wordFromPoint(x, y) {
+    let node = null;
+    let offset = 0;
+    if (document.caretRangeFromPoint) {
+      const range = document.caretRangeFromPoint(x, y);
+      if (range) {
+        node = range.startContainer;
+        offset = range.startOffset;
+      }
+    } else if (document.caretPositionFromPoint) {
+      const position = document.caretPositionFromPoint(x, y);
+      if (position) {
+        node = position.offsetNode;
+        offset = position.offset;
+      }
+    }
+    if (!node || node.nodeType !== Node.TEXT_NODE) return null;
+
+    const text = node.textContent || '';
+    let start = Math.min(offset, text.length);
+    let end = start;
+    while (start > 0 && isWordChar(text[start - 1])) start -= 1;
+    while (end < text.length && isWordChar(text[end])) end += 1;
+
+    const raw = text.slice(start, end).replace(/^[-'’]+|[-'’]+$/g, '');
+    if (raw.length < 2 || !/[A-Za-z]{2}/.test(raw)) return null;
+
+    const range = document.createRange();
+    range.setStart(node, start);
+    range.setEnd(node, end);
+    const rect = range.getBoundingClientRect();
+    if (!rect.width) return null;
+
+    const paragraph = node.parentElement && node.parentElement.closest('[data-en-block]');
+    return { term: raw, context: paragraph ? paragraph.textContent.trim() : '', rect };
+  }
+
+  function createLookup(article) {
+    const local = (term) => {
+      const key = term.toLowerCase();
+      return (
+        (article.vocab || []).find((item) => item.term.toLowerCase() === key) ||
+        (article.glossary || []).find((item) => item.term.toLowerCase() === key) ||
+        null
+      );
+    };
+    const cache = new Map();
+
+    function close() {
+      overlay.innerHTML = '';
+      document.removeEventListener('keydown', onKey);
+    }
+    function onKey(event) {
+      if (event.key === 'Escape') close();
+    }
+
+    function place(box, rect) {
+      const width = box.offsetWidth || 320;
+      const height = box.offsetHeight || 170;
+      const left = Math.min(
+        Math.max(12, rect.left + rect.width / 2 - width / 2),
+        window.innerWidth - width - 12,
+      );
+      const above = rect.bottom + height + 16 > window.innerHeight;
+      const top = Math.max(12, above ? rect.top - height - 10 : rect.bottom + 10);
+      box.style.left = `${left}px`;
+      box.style.top = `${top}px`;
+    }
+
+    function draw(hit, entry, error, loading, saved) {
+      overlay.innerHTML = `<div class="popover__scrim"></div>
+        <div class="popover" role="dialog" aria-label="${esc(hit.term)} 的释义">
+          <div class="popover__head">
+            <strong class="popover__term">${esc(hit.term)}</strong>
+            ${entry && entry.phonetic ? `<span class="popover__phonetic">/${esc(entry.phonetic)}/</span>` : ''}
+            ${entry && entry.pos ? `<span class="popover__pos">${esc(entry.pos)}</span>` : ''}
+          </div>
+          ${loading ? '<p class="popover__hint">正在生成释义…</p>' : ''}
+          ${error ? `<p class="popover__error">${esc(error)}</p>` : ''}
+          ${entry
+            ? `<p class="popover__def">${esc(entry.zh)}</p>
+               ${entry.en ? `<p class="popover__gloss">${esc(entry.en)}</p>` : ''}
+               ${entry.example
+                 ? `<div class="popover__example">
+                      <p>${esc(entry.example.en)}</p>
+                      <p class="popover__example-zh">${esc(entry.example.zh)}</p>
+                    </div>`
+                 : ''}
+               <div class="popover__actions">
+                 <button class="chip" data-save ${saved ? 'disabled' : ''}>${
+                   saved ? '已加入生词本' : '加入生词本'
+                 }</button>
+                 <button class="chip chip--ghost" data-close>关闭</button>
+               </div>`
+            : ''}
+        </div>`;
+
+      const box = overlay.querySelector('.popover');
+      place(box, hit.rect);
+      overlay.querySelector('.popover__scrim').addEventListener('click', close);
+      const closeButton = overlay.querySelector('[data-close]');
+      if (closeButton) closeButton.addEventListener('click', close);
+      const saveButton = overlay.querySelector('[data-save]');
+      if (saveButton && entry) {
+        saveButton.addEventListener('click', async () => {
+          saveButton.disabled = true;
+          try {
+            await api('/api/vocab', { method: 'POST', body: JSON.stringify(entry) });
+            saved = true;
+            draw(hit, entry, null, false, true);
+          } catch (saveError) {
+            saveButton.disabled = false;
+            draw(hit, entry, saveError.message, false, false);
+          }
+        });
+      }
+      document.addEventListener('keydown', onKey);
+    }
+
+    async function show(hit) {
+      const known = local(hit.term) || cache.get(hit.term.toLowerCase());
+      if (known) {
+        cache.set(hit.term.toLowerCase(), known);
+        draw(hit, known, null, false, false);
+        return;
+      }
+      draw(hit, null, null, true, false);
+      try {
+        const result = await api('/api/lookup', {
+          method: 'POST',
+          body: JSON.stringify({ term: hit.term, context: hit.context }),
+        });
+        cache.set(hit.term.toLowerCase(), result.entry);
+        draw(hit, result.entry, null, false, false);
+      } catch (error) {
+        draw(hit, null, error.message, false, false);
+      }
+    }
+
+    return { show };
+  }
+
+  // ------------------------------------------------------------------ vocab
+  async function renderVocab() {
+    document.title = '生词本 · Tern';
+    setNav('vocab');
+    page.innerHTML = `<section class="panel">
+      <span class="kicker">生词本</span>
+      <h1 class="panel__title" id="vocab-count">…</h1>
+      <p class="panel__lede">阅读时点英文单词，再点「加入生词本」，就会出现在这里。</p>
+      <p class="status-line" id="vocab-status">读取中…</p>
+      <ul class="vocab" id="vocab-list"></ul>
+    </section>`;
+
+    const status = document.getElementById('vocab-status');
+    const listNode = document.getElementById('vocab-list');
+    const count = document.getElementById('vocab-count');
+
+    let vocab;
+    try {
+      ({ vocab } = await api('/api/vocab'));
+    } catch (error) {
+      status.textContent = error.message;
+      status.classList.add('is-error');
+      count.textContent = '';
+      return;
+    }
+
+    const render = () => {
+      count.textContent = `${vocab.length} 个词`;
+      status.textContent = vocab.length ? '' : '还是空的。';
+      status.classList.toggle('is-error', false);
+      listNode.innerHTML = vocab
+        .map(
+          (item) => `<li class="vocab__item">
+            <div class="vocab__head">
+              <strong>${esc(item.term)}</strong>
+              ${item.phonetic ? `<span class="vocab__phonetic">/${esc(item.phonetic)}/</span>` : ''}
+              ${item.pos ? `<span class="kicker">${esc(item.pos)}</span>` : ''}
+              <button class="vocab__remove" aria-label="移除 ${esc(item.term)}" data-remove="${esc(item.term)}">×</button>
+            </div>
+            <p class="vocab__def">${esc(item.zh)}</p>
+            ${item.en ? `<p class="vocab__gloss">${esc(item.en)}</p>` : ''}
+            ${item.example
+              ? `<p class="vocab__example">${esc(item.example.en)}<span>${esc(item.example.zh)}</span></p>`
+              : ''}
+          </li>`,
+        )
+        .join('');
+
+      listNode.querySelectorAll('[data-remove]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          button.disabled = true;
+          try {
+            const result = await api(`/api/vocab?term=${encodeURIComponent(button.dataset.remove)}`, {
+              method: 'DELETE',
+            });
+            vocab = result.vocab;
+            render();
+          } catch (error) {
+            button.disabled = false;
+            status.textContent = error.message;
+            status.classList.add('is-error');
+          }
+        });
+      });
+    };
+    render();
+  }
+
+  // ------------------------------------------------------------------ host API
+
+  // The native toolbar drives the page with these. They keep the page's own
+  // preferences in step, so a later reload or the phone finds the same mode.
+  let repaintArticle = null;
+  window.tern = {
+    setMode(mode) {
+      if (!MODES.includes(mode) || reader.mode === mode) return reader.mode;
+      reader.mode = mode;
+      localStorage.setItem(MODE_KEY, mode);
+      if (repaintArticle) repaintArticle();
+      else syncToolbar(null);
+      return reader.mode;
+    },
+    setSize(size) {
+      if (!SIZES.includes(size) || reader.size === size) return reader.size;
+      reader.size = size;
+      localStorage.setItem(SIZE_KEY, size);
+      syncToolbar(null);
+      return reader.size;
+    },
+    state() {
+      return {
+        mode: reader.mode,
+        size: reader.size,
+        embed: document.documentElement.classList.contains('embed'),
+      };
+    },
+  };
+
+  // ------------------------------------------------------------------ boot
+  function route() {
+    const path = location.pathname.replace(/\/+$/, '') || '/';
+    if (path === '/') return renderHome();
+    if (path === '/vocab') return renderVocab();
+    const article = path.match(/^\/a\/([^/]+)$/);
+    if (article) return renderArticle(decodeURIComponent(article[1]));
+    page.innerHTML = `<section class="empty"><h1>页面不存在</h1><p>链接可能已经失效。</p>
+      <p><a class="link" href="/">回到首页</a></p></section>`;
+  }
+
+  route();
+})();
+</script>
+</body>
+</html>
