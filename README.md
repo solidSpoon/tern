@@ -1,4 +1,10 @@
-# Tern · 双语阅读（Go + MyGo）
+<p align="center">
+  <img src="assets/brand/png/icon-256.png" width="128" height="128" alt="Tern">
+</p>
+
+<h1 align="center">Tern</h1>
+
+<p align="center">双语阅读 · Go + MyGo</p>
 
 把网页变成一篇中英对照的阅读页。桌面端是一个真正的 macOS App：除了**文章阅读页**用 Web 写，
 其余界面（文章列表、对话、生词本、设置、阅读工具条）全部由 [MyGo](https://github.com/egoist/mygo)
