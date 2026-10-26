@@ -887,15 +887,33 @@ html.embed .article__foot a { display: none; }
 .import__input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
 .import .chip { flex: none; }
 
-/* One conversation: the log fills the page, the composer sits at its bottom. */
-.thread {
-  max-width: 720px;
-  margin: 0 auto;
-  min-height: calc(100dvh - 64px);
+/* One conversation: the page does not scroll, the log does, so the composer
+   keeps its place while the phone's browser bar comes and goes. */
+body.chat-page {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+body.chat-page .masthead { flex: none; position: static; }
+body.chat-page .page {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  padding-bottom: 0;
   display: flex;
   flex-direction: column;
 }
-html.embed .thread { min-height: calc(100dvh - 40px); }
+.thread {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+.thread__head { flex: none; }
+.status-line { flex: none; }
 .thread__head {
   display: flex;
   align-items: flex-start;
@@ -927,6 +945,10 @@ html.embed .thread { min-height: calc(100dvh - 40px); }
   flex-direction: column;
   gap: 16px;
   flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 .chat__who { font-size: 10px; letter-spacing: 0.08em; color: var(--ink-3); margin-bottom: 4px; }
 .chat__bubble {
@@ -961,8 +983,6 @@ html.embed .thread { min-height: calc(100dvh - 40px); }
 
 .composer {
   flex: none;
-  position: sticky;
-  bottom: 0;
   z-index: 30;
   display: flex;
   align-items: flex-end;
@@ -1816,18 +1836,20 @@ html.embed .thread { min-height: calc(100dvh - 40px); }
     const send = document.getElementById('composer-send');
 
     let first = true;
+    let lastPaint = '';
 
-    const paint = (thread, busy) => {
+    const paint = (thread, running) => {
       meta.innerHTML = `<strong>${esc(threadHost(thread.url))}</strong><span>${esc(thread.url)}</span>`;
       if (thread.articleId) {
         read.hidden = false;
         read.href = `/a/${encodeURIComponent(thread.articleId)}`;
       }
-      const running = thread.state === 'running' || busy;
-      const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 140;
+      const atBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 90;
       chat.innerHTML = chatMarkup(thread.events);
       if (first || atBottom) {
-        requestAnimationFrame(() => window.scrollTo(0, document.body.scrollHeight));
+        requestAnimationFrame(() => {
+          chat.scrollTop = chat.scrollHeight;
+        });
       }
       first = false;
       input.disabled = running;
@@ -1839,13 +1861,21 @@ html.embed .thread { min-height: calc(100dvh - 40px); }
       send.disabled = running || !input.value.trim();
       status.textContent = running ? 'Agent 正在工作…' : thread.state === 'error' ? thread.error : '';
       status.classList.toggle('is-error', thread.state === 'error');
-      return running;
     };
 
     const load = async () => {
       try {
         const { thread, busy } = await api(`/api/threads/${encodeURIComponent(id)}`);
-        const running = paint(thread, Boolean(busy));
+        const running = thread.state === 'running' || busy;
+        const events = thread.events || [];
+        const last = events.length ? events[events.length - 1] : null;
+        // Repaint only when the log really changed: rebuilding the list every
+        // poll would move the scroll position under the reader's thumb.
+        const signature = [thread.state, thread.articleId || '', events.length, last ? last.id : '', last ? last.status : ''].join('|');
+        if (signature !== lastPaint) {
+          lastPaint = signature;
+          paint(thread, running);
+        }
         if (running) chatTimer = setTimeout(load, 1200);
       } catch (error) {
         status.textContent = error.message;
@@ -1917,6 +1947,7 @@ html.embed .thread { min-height: calc(100dvh - 40px); }
   // ------------------------------------------------------------------ boot
   function route() {
     const path = location.pathname.replace(/\/+$/, '') || '/';
+    document.body.classList.toggle('chat-page', /^\/t\//.test(path));
     if (path === '/') return renderHome();
     if (path === '/threads') return renderThreads();
     if (path === '/vocab') return renderVocab();
