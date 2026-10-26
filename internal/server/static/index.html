@@ -585,10 +585,12 @@ img { max-width: 100%; display: block; }
 .lookup {
   position: fixed;
   top: calc(var(--masthead-h) + 10px);
-  left: 50%;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   z-index: 80;
   width: min(680px, calc(100vw - 32px));
-  min-height: 72px;
+  height: 88px;
   padding: 12px 14px;
   box-sizing: border-box;
   display: flex;
@@ -600,15 +602,13 @@ img { max-width: 100%; display: block; }
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05), 0 18px 44px rgba(0, 0, 0, 0.16);
   opacity: 0;
   visibility: hidden;
-  transform: translate(-50%, -6px);
-  transition: opacity 0.14s ease, transform 0.14s ease, visibility 0.14s;
 }
 html.embed .lookup { top: 18px; }
-.lookup.is-open { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+.lookup.is-open { opacity: 1; visibility: visible; }
 .lookup__text {
   flex: 1;
   min-width: 0;
-  max-height: 68px;
+  max-height: 64px;
   overflow-y: auto;
   scrollbar-width: none;
   display: flex;
@@ -624,6 +624,7 @@ html.embed .lookup { top: 18px; }
 .lookup__hint, .lookup__error { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ink-3); }
 .lookup__error { color: var(--danger); }
 .lookup__actions { flex: none; align-self: center; display: flex; gap: 6px; }
+.lookup__actions .is-placeholder { visibility: hidden; }
 .chip--small { padding: 4px 10px; font-size: 11.5px; }
 
 .chip {
@@ -1472,11 +1473,13 @@ body.chat-page .page {
     };
     const cache = new Map();
     const hideAfter = 3000;
+    const markAfter = 5000;
     const supportsHighlight =
       typeof Highlight === 'function' && typeof CSS !== 'undefined' && Boolean(CSS.highlights);
     let bar = null;
     let state = null;
     let timer = 0;
+    let markTimer = 0;
 
     function clearTimer() {
       if (timer) clearTimeout(timer);
@@ -1494,12 +1497,16 @@ body.chat-page .page {
 
     function mark(hit) {
       if (!supportsHighlight) return;
+      if (markTimer) clearTimeout(markTimer);
       CSS.highlights.delete('word-hit');
       if (!hit.node || !hit.node.isConnected) return;
       const range = document.createRange();
       range.setStart(hit.node, hit.start);
       range.setEnd(hit.node, hit.end);
       CSS.highlights.set('word-hit', new Highlight(range));
+      // The wash outlives the panel by two seconds: the reader can look back
+      // and see which word the meaning came from.
+      markTimer = setTimeout(() => CSS.highlights.delete('word-hit'), markAfter);
     }
 
     function later() {
@@ -1522,10 +1529,10 @@ body.chat-page .page {
           ${entry ? `<p class="lookup__def">${esc(entry.zh)}</p>` : ''}
         </div>
         <div class="lookup__actions">
-          ${entry ? `<button class="chip chip--small" data-save ${saved ? 'disabled' : ''}>${saved ? '已加入' : '＋ 生词本'}</button>` : ''}
-          <button class="chip chip--ghost chip--small" data-close aria-label="关闭">×</button>
+          ${entry
+            ? `<button class="chip chip--small" data-save ${saved ? 'disabled' : ''}>${saved ? '已加入' : '＋ 生词本'}</button>`
+            : '<button class="chip chip--small is-placeholder" disabled>＋ 生词本</button>'}
         </div>`;
-      bar.querySelector('[data-close]').addEventListener('click', close);
       const saveButton = bar.querySelector('[data-save]');
       if (saveButton && entry) {
         saveButton.addEventListener('click', async () => {
@@ -1578,7 +1585,10 @@ body.chat-page .page {
 
     function mount(node) {
       bar = node;
-      if (supportsHighlight) CSS.highlights.delete('word-hit');
+      if (supportsHighlight) {
+        if (markTimer) clearTimeout(markTimer);
+        CSS.highlights.delete('word-hit');
+      }
       // Reading it or tapping 生词本 takes a moment: do not close under the
       // finger while the pointer or the focus is on the panel.
       bar.addEventListener('pointerenter', clearTimer);
