@@ -192,6 +192,8 @@ img { max-width: 100%; display: block; }
 
 .theme-toggle:active { background: var(--paper-2); }
 
+.theme-toggle svg { width: 15px; height: 15px; display: block; }
+
 .nav { display: flex; align-items: center; gap: 16px; }
 
 .nav__link {
@@ -684,6 +686,8 @@ img { max-width: 100%; display: block; }
 }
 
 .lookup__say:active { background: var(--paper-3); }
+
+.lookup__say svg { width: 19px; height: 19px; display: block; }
 .chip {
   border: 1px solid transparent;
   background: var(--ink);
@@ -1045,7 +1049,9 @@ body.chat-page .page {
         <a class="nav__link" href="/" data-nav="home">首页</a>
         <a class="nav__link" href="/threads" data-nav="threads">对话</a>
       </nav>
-      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="切换到深色模式">☾</button>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="切换到深色模式">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+      </button>
     </div>
   </div>
 </header>
@@ -1581,7 +1587,9 @@ body.chat-page .page {
           ${error ? `<p class="lookup__error">${esc(error)}</p>` : ''}
           ${entry ? `<p class="lookup__def">${esc(entry.zh)}</p>` : ''}
         </div>
-        <button class="lookup__say" data-say type="button" aria-label="播放发音">🔊</button>
+        <button class="lookup__say" data-say type="button" aria-label="播放发音">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+        </button>
       </div>`;
       const sayButton = bar.querySelector('[data-say]');
       if (sayButton) {
@@ -1928,6 +1936,10 @@ body.chat-page .page {
   // window, so the embedded page never overrides it.
   const themeButton = document.getElementById('theme-toggle');
   const scheme = window.matchMedia('(prefers-color-scheme: dark)');
+  const ICON_MOON =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+  const ICON_SUN =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
 
   function readTheme() {
     try {
@@ -1951,7 +1963,7 @@ body.chat-page .page {
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', dark ? '#111112' : '#fbfbfb');
     if (themeButton) {
-      themeButton.textContent = dark ? '☀' : '☾';
+      themeButton.innerHTML = dark ? ICON_SUN : ICON_MOON;
       themeButton.setAttribute('aria-label', dark ? '切换到浅色模式' : '切换到深色模式');
     }
   }
