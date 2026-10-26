@@ -4,8 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1" />
 <meta name="color-scheme" content="light dark" />
-<meta name="theme-color" content="#fbfbfb" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#111112" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#fbfbfb" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-title" content="Tern" />
 <meta name="format-detection" content="telephone=no" />
@@ -20,6 +19,12 @@
     if (params.get("embed") === "1") {
       document.documentElement.classList.add("embed");
     }
+    try {
+      var mode = localStorage.getItem("theme");
+      if ((mode === "light" || mode === "dark") && !document.documentElement.classList.contains("embed")) {
+        document.documentElement.dataset.theme = mode;
+      }
+    } catch (e) {}
   })();
 </script>
 <style>
@@ -50,7 +55,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --paper: #111112;
     --paper-2: #1a1a1c;
     --paper-3: #232326;
@@ -64,6 +69,23 @@
     --danger: #ef8a7d;
   }
 }
+
+html[data-theme='dark'] {
+  --paper: #111112;
+  --paper-2: #1a1a1c;
+  --paper-3: #232326;
+  --ink: #f1e7d4;
+  --ink-2: #b9c6c7;
+  --ink-3: #83969b;
+  --rule: #2a2a2d;
+  --rule-strong: #3a3a3e;
+  --accent: #4e9aa7;
+  --accent-soft: rgba(78, 154, 167, 0.18);
+  --danger: #ef8a7d;
+}
+
+html[data-theme='light'] { color-scheme: light; }
+html[data-theme='dark'] { color-scheme: dark; }
 
 * { box-sizing: border-box; }
 
@@ -151,6 +173,24 @@ img { max-width: 100%; display: block; }
   gap: 16px;
   min-width: 0;
 }
+
+.theme-toggle {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.theme-toggle:active { background: var(--paper-2); }
 
 .nav { display: flex; align-items: center; gap: 16px; }
 
@@ -1029,6 +1069,7 @@ body.chat-page .page {
         <a class="nav__link" href="/threads" data-nav="threads">对话</a>
         <a class="nav__link" href="/vocab" data-nav="vocab">生词本</a>
       </nav>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="切换到深色模式">☾</button>
     </div>
   </div>
 </header>
@@ -1629,7 +1670,6 @@ body.chat-page .page {
     document.title = '生词本 · Tern';
     setNav('vocab');
     page.innerHTML = `<section class="panel">
-      <span class="kicker">生词本</span>
       <h1 class="panel__title" id="vocab-count">…</h1>
       <p class="panel__lede">阅读时点英文单词，再点「加入生词本」，就会出现在这里。</p>
       <p class="status-line" id="vocab-status">读取中…</p>
@@ -1798,7 +1838,6 @@ body.chat-page .page {
     setNav('threads');
     stopChat();
     page.innerHTML = `<section class="panel">
-      <span class="kicker">对话</span>
       <h1 class="panel__title">导入与对话</h1>
       <p class="panel__lede">贴一个链接开一个对话。Agent 在这台 Mac 上打开页面、抽出正文、逐段翻译并入库，过程会出现在下面的对话里。</p>
       <form class="import" id="import">
@@ -1989,6 +2028,53 @@ body.chat-page .page {
       };
     },
   };
+
+  // ------------------------------------------------------------------ theme
+  // The page follows the system until the reader picks a side; the choice is
+  // kept in localStorage. Inside the desktop app the native theme owns the
+  // window, so the embedded page never overrides it.
+  const themeButton = document.getElementById('theme-toggle');
+  const scheme = window.matchMedia('(prefers-color-scheme: dark)');
+
+  function readTheme() {
+    try {
+      const value = localStorage.getItem('theme');
+      return value === 'light' || value === 'dark' ? value : '';
+    } catch {
+      return '';
+    }
+  }
+
+  function currentTheme() {
+    return readTheme() || (scheme.matches ? 'dark' : 'light');
+  }
+
+  function applyTheme() {
+    if (document.documentElement.classList.contains('embed')) return;
+    const mode = readTheme();
+    if (mode) document.documentElement.dataset.theme = mode;
+    else delete document.documentElement.dataset.theme;
+    const dark = currentTheme() === 'dark';
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', dark ? '#111112' : '#fbfbfb');
+    if (themeButton) {
+      themeButton.textContent = dark ? '☀' : '☾';
+      themeButton.setAttribute('aria-label', dark ? '切换到浅色模式' : '切换到深色模式');
+    }
+  }
+
+  applyTheme();
+  scheme.addEventListener('change', applyTheme);
+  if (themeButton) {
+    themeButton.addEventListener('click', () => {
+      try {
+        localStorage.setItem('theme', currentTheme() === 'dark' ? 'light' : 'dark');
+      } catch {
+        return;
+      }
+      applyTheme();
+    });
+  }
 
   // ------------------------------------------------------------------ boot
   function route() {
