@@ -22,7 +22,6 @@ type Importer struct {
 // Result says what an import produced.
 type Result struct {
 	Article *model.Article `json:"article"`
-	Warmed  int            `json:"warmed"`
 }
 
 // Import validates raw data (usually the agent's article.json), stores the
@@ -95,14 +94,7 @@ func (im *Importer) Import(draft *model.Draft, sourceURL, existing string) (*Res
 		return nil, model.Issues{{Path: "(store)", Message: err.Error()}}
 	}
 
-	words := make([]model.Vocab, 0, len(article.Vocab)+len(article.Glossary))
-	words = append(words, article.Vocab...)
-	words = append(words, article.Glossary...)
-	warmed, err := im.Store.CacheEntries(words)
-	if err != nil {
-		return nil, model.Issues{{Path: "(dictionary)", Message: err.Error()}}
-	}
-	return &Result{Article: article, Warmed: warmed}, nil
+	return &Result{Article: article}, nil
 }
 
 // localize rewrites every picture's src into the local media folder. A picture

@@ -49,11 +49,8 @@ func TestImportReplacesAndWarms(t *testing.T) {
 	if article.Blocks[0].ID != "b1" || article.Blocks[2].ID != "b3" {
 		t.Errorf("block ids were not filled: %+v", article.Blocks)
 	}
-	if result.Warmed != 2 {
-		t.Errorf("warmed = %d, want 2", result.Warmed)
-	}
-	if cached := library.CachedEntry("porcelain"); cached == nil || cached.ZH != "瓷器" {
-		t.Errorf("the dictionary was not warmed: %+v", cached)
+	if cached := library.CachedEntry("porcelain"); cached != nil {
+		t.Errorf("publishing warmed the dictionary again: %+v", cached)
 	}
 	if _, err := os.Stat(settings.Paths().Library + "/inkwell.json"); err != nil {
 		t.Fatalf("the article file is missing: %v", err)

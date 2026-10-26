@@ -62,6 +62,7 @@ type Paths struct {
 	Config    string
 	Vocab     string
 	Dict      string
+	DB        string
 	Extension string
 }
 
@@ -80,6 +81,7 @@ func PathsFor(root string) Paths {
 		Config:    filepath.Join(data, "config.json"),
 		Vocab:     filepath.Join(data, "vocab.json"),
 		Dict:      filepath.Join(data, "dict.json"),
+		DB:        filepath.Join(data, "tern.db"),
 		Extension: filepath.Join(pi, "tern-extension.ts"),
 	}
 }

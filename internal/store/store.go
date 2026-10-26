@@ -16,6 +16,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/egoist/mygo/plugins/sqlite"
+
 	"github.com/solidSpoon/tern-go/internal/config"
 	"github.com/solidSpoon/tern-go/internal/model"
 )
@@ -25,10 +27,17 @@ var ErrNotFound = errors.New("article not found")
 
 var safeID = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,80}$`)
 
-// Store is the JSON library, dictionary and vocabulary book.
+// Store is the JSON library and vocabulary book, plus the writable SQLite file
+// that holds the lookup cache.
 type Store struct {
 	paths config.Paths
 	mu    sync.Mutex
+
+	cacheMu     sync.Mutex
+	cache       *sqlite.DB
+	cacheReady  bool
+	cachePath   string
+	cacheLegacy string
 }
 
 // New makes a store under the given paths, creating the directories.
@@ -38,7 +47,22 @@ func New(paths config.Paths) (*Store, error) {
 			return nil, err
 		}
 	}
-	return &Store{paths: paths}, nil
+	store := &Store{paths: paths}
+	store.usePaths(paths)
+	return store, nil
+}
+
+// usePaths points the lookup cache at the paths of another root.
+func (s *Store) usePaths(paths config.Paths) {
+	s.cacheMu.Lock()
+	defer s.cacheMu.Unlock()
+	if s.cache != nil {
+		_ = s.cache.Close()
+	}
+	s.cache = nil
+	s.cacheReady = false
+	s.cachePath = paths.DB
+	s.cacheLegacy = paths.Dict
 }
 
 // Paths exposes the directories the store works in.
@@ -55,6 +79,7 @@ func (s *Store) SetPaths(paths config.Paths) error {
 	s.mu.Lock()
 	s.paths = paths
 	s.mu.Unlock()
+	s.usePaths(paths)
 	return nil
 }
 
@@ -287,63 +312,6 @@ func (s *Store) RemoveVocab(term string) ([]model.Vocab, error) {
 		return WriteJSONAtomic(s.paths.Vocab, list)
 	})
 	return list, err
-}
-
-// ---------------------------------------------------------------- dictionary
-
-type dictEntry struct {
-	Entry model.Vocab `json:"entry"`
-	At    string      `json:"at"`
-}
-
-func (s *Store) readDict() map[string]dictEntry {
-	cache := map[string]dictEntry{}
-	raw, err := os.ReadFile(s.paths.Dict)
-	if err == nil {
-		_ = json.Unmarshal(raw, &cache)
-	}
-	return cache
-}
-
-// CachedEntry returns a cached dictionary entry for term.
-func (s *Store) CachedEntry(term string) *model.Vocab {
-	entry, ok := s.readDict()[strings.ToLower(term)]
-	if !ok {
-		return nil
-	}
-	return &entry.Entry
-}
-
-// CacheEntry stores one entry.
-func (s *Store) CacheEntry(term string, entry model.Vocab) error {
-	return s.Lock(func() error {
-		cache := s.readDict()
-		cache[strings.ToLower(term)] = dictEntry{Entry: entry, At: Now()}
-		return WriteJSONAtomic(s.paths.Dict, cache)
-	})
-}
-
-// CacheEntries warms the dictionary with a whole article's words, and returns
-// how many were new.
-func (s *Store) CacheEntries(entries []model.Vocab) (int, error) {
-	added := 0
-	err := s.Lock(func() error {
-		cache := s.readDict()
-		now := Now()
-		for _, entry := range entries {
-			key := strings.ToLower(entry.Term)
-			if _, ok := cache[key]; ok {
-				continue
-			}
-			cache[key] = dictEntry{Entry: entry, At: now}
-			added++
-		}
-		if added == 0 {
-			return nil
-		}
-		return WriteJSONAtomic(s.paths.Dict, cache)
-	})
-	return added, err
 }
 
 // NormalizeTerm lowercases a word and trims punctuation, as a lookup treats it.

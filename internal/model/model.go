@@ -98,8 +98,9 @@ type Article struct {
 	Blocks  []Block   `json:"blocks"`
 	// Vocab is the handful of keywords shown on the card.
 	Vocab []Vocab `json:"vocab"`
-	// Glossary is the pre-warmed word list of the whole article, written to the
-	// dictionary cache when the article is published.
+	// Glossary is the whole article's word list. New articles no longer write
+	// one — the offline dictionary does that job — but old articles still read
+	// it.
 	Glossary  []Vocab `json:"glossary"`
 	CreatedAt string  `json:"createdAt"`
 	UpdatedAt string  `json:"updatedAt"`

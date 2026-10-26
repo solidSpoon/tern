@@ -458,7 +458,6 @@ func (s *Server) publishArticle(w http.ResponseWriter, r *http.Request) {
 		"ok":        true,
 		"articleId": article.ID,
 		"blocks":    len(article.Blocks),
-		"warmed":    result.Warmed,
 	})
 }
 

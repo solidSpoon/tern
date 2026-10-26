@@ -73,7 +73,6 @@ const publish = defineTool({
 				ok?: boolean;
 				articleId?: string;
 				blocks?: number;
-				warmed?: number;
 				issues?: string[];
 				error?: string;
 			};
@@ -86,11 +85,7 @@ const publish = defineTool({
 							text:
 								"已入库：" +
 								data.articleId +
-								"（" +
-								data.blocks +
-								" 段，" +
-								data.warmed +
-								" 个生词已预热）",
+								"（" + data.blocks + " 段）",
 						},
 					],
 					details: data,

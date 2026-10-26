@@ -133,7 +133,10 @@ speech, the Chinese meaning, the English definition, and the forms from the
 `exchange` column. Lookup keys are lowercased.
 
 `internal/dict` opens the file read-only through MyGo's SQLite plugin; never
-link a SQLite driver into the app. `/api/lookup` answers from the store's AI
+link a SQLite driver into the app. The AI's cached lookups live in
+`data/tern.db`, a writable SQLite file with the same word columns (plus example
+and timestamps), opened by the store; the old `dict.json` is imported once and
+left as `dict.json.imported`. `/api/lookup` answers from the store's AI
 cache first, then the offline file, then the agent. A miss (proper nouns,
 compounds, technical words) still goes to the agent, so lookup keeps working
 when the file is absent, and the file covers about 88% of the words in the
@@ -146,5 +149,6 @@ current library.
   `internal/pi/extension.ts` gives it `publish_article` and `upload_image`.
 - `publish_article` reads `article.json` from the thread's work directory and
   POSTs it back to the server, which validates (field paths returned to the
-  model), localizes pictures, stores the article and warms the dictionary.
+  model), localizes pictures and stores the article. No dictionary warm-up:
+  lookups go to the offline dictionary first.
 - Key goes to the child through the environment only; no API reads it back.

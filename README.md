@@ -102,7 +102,7 @@ internal/
   server/              net/http：JSON API、/media、阅读页（go:embed）
   threads/             会话：一个链接=一个对话，常驻 Pi 子进程、事件日志、入库
   pi/                  Pi RPC 客户端、运行时安装（GitHub release + SHA256 + 解包）、提示词、查词
-  publish/             入库：结构校验 → 图片本地化 → 落库 → 词典预热
+  publish/             入库：结构校验 → 图片本地化 → 落库
   model/               Article / Block / Vocab / Thread 结构（全站唯一内容契约）
   store/               JSON 文件存储（文章库、生词本、词典缓存）
   config/              路径与设置（data/config.json）
@@ -115,7 +115,7 @@ internal/
   └─ 起/复用 Pi 子进程（--mode rpc，cwd=data/threads/<id>/work）
      ├─ 提示词要求：ego-browser 抓正文 → 写 article.json → 调 publish_article
      ├─ 扩展 publish_article 把文件 POST 回 /api/threads/<id>/publish
-     ├─ 主进程校验（字段级 issues 回给模型）→ 下载图片 → 落库 → 预热词典
+     ├─ 主进程校验（字段级 issues 回给模型）→ 下载图片 → 落库
      └─ 入库成功后立即 abort 本轮，避免模型继续“自查”
 ```
 
@@ -127,7 +127,7 @@ internal/
 
 - 双语块 1:1 对齐：`p / h2 / image / quote / list`，缺译文时降级单语。
 - 宽度 ≥ 1000px（嵌入模式 ≥ 780px）时自动左右双栏：英文在左，中文在右。
-- 点英文单词查词：文章内 `glossary` → 词典缓存 → 模型；可加入生词本。
+- 点英文单词查词：离线词典 → 查词缓存 → 模型；可加入生词本。
 - 阅读模式、字号记在本机（桌面写进 `data/config.json` 的 `reading`，手机用 localStorage）。
 - 首页、生词本、详情页都支持手机宽度：无横向滚动，底部留出安全区。
 
@@ -194,7 +194,7 @@ data/
   pi/tern-extension.ts # 内置扩展（每次启动重写）
   pi/sessions/         # Pi 自己的会话文件
   runtime/pi/<版本>/   # Pi 可执行文件
-  dict.json            # 查词缓存
+  tern.db              # 可写 SQLite：AI 查词缓存（生词本以后也放这里）
   vocab.json           # 生词本
 media/                 # 图片（可用 TERN_MEDIA_DIR 覆盖）
 ```

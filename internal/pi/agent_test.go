@@ -15,13 +15,16 @@ func TestIngestPrompt(t *testing.T) {
 		"article.json",
 		"publish_article",
 		"1:1",
-		"glossary",
+		"vocab",
 		"command -v ego-browser",
 		"never scan the disk",
 	} {
 		if !strings.Contains(prompt, want) {
 			t.Errorf("the prompt does not mention %q", want)
 		}
+	}
+	if strings.Contains(prompt, "glossary") {
+		t.Error("the prompt still asks for a glossary")
 	}
 	if strings.Contains(prompt, "\\`") {
 		t.Error("the prompt escaped a backtick")

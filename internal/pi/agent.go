@@ -319,7 +319,6 @@ const templateSpec = `Article structure (TypeScript):
   tags:    string[]                          // 2–4, in Chinese
   blocks:  Block[]
   vocab:     { term, phonetic?, pos?, zh, en?, example?: { en, zh } }[]   // 4–8 keywords
-  glossary:  { term, phonetic?, pos?, zh, en?, example?: { en, zh } }[]   // 15–40 words
 };
 
 Block union (number ids b1, b2… in order):
@@ -355,8 +354,8 @@ Do this in order:
    - Use h2 only for real subheadings.
    - note only when a term or a piece of cultural background would not be understood; at most 3.
    - Never invent facts that are not in the original; the summary and tags may generalize.
-   - glossary lists 15–40 words beyond basic vocabulary, with pos and a Chinese definition; examples quote the article when possible.
-     vocab is the 4–8 most important of those, and must be a subset of glossary.
+   - vocab lists the 4–8 most important words of the article, with pos and a Chinese definition;
+     examples quote the article when possible.
    - Pictures: keep the page's original src — Tern downloads them on import. If you need to change one
      (replace, crop, convert), save it into the working directory, call upload_image, and use the returned
      /media/... in the cover or an image block.
@@ -364,8 +363,8 @@ Do this in order:
 ` + templateSpec + `
 
 3. Publish: call the publish_article tool (no arguments — it always reads article.json from the working directory).
-   It checks the structure, downloads the pictures, writes the article into the library, and warms the dictionary.
-   "已入库：<id>（N 段，M 个生词已预热）" means success. If it returns field errors, fix article.json and call it **again** — every call updates the same article.
+   It checks the structure, downloads the pictures and writes the article into the library.
+   "已入库：<id>（N 段）" means success. If it returns field errors, fix article.json and call it **again** — every call updates the same article.
 
 **Language**: talk to the user in Simplified Chinese (keep file names and commands in English). Keep reports short: a few sentences on what you did, how many paragraphs, how many words — no lists of details.
 
