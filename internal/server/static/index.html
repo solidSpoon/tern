@@ -634,7 +634,6 @@ img { max-width: 100%; display: block; }
   min-width: 84px;
   justify-content: flex-end;
 }
-.lookup__actions .is-placeholder { visibility: hidden; }
 .chip--small { padding: 4px 10px; font-size: 11.5px; }
 
 .chip {
@@ -1540,9 +1539,9 @@ body.chat-page .page {
           ${entry ? `<p class="lookup__def">${esc(entry.zh)}</p>` : ''}
         </div>
         <div class="lookup__actions">
-          ${entry
-            ? `<button class="chip chip--small" data-save ${saved ? 'disabled' : ''}>${saved ? '已加入' : '＋ 生词本'}</button>`
-            : '<button class="chip chip--small is-placeholder" disabled>＋ 生词本</button>'}
+          <button class="chip chip--small" data-save ${entry && !saved ? '' : 'disabled'}>${
+            saved ? '已加入' : '＋ 生词本'
+          }</button>
         </div>
       </div>`;
       const saveButton = bar.querySelector('[data-save]');
