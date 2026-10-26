@@ -18,7 +18,6 @@ func (app *App) feedPage(c *ui.Context) {
 		head.Children(func() {
 			ui.Row(c).AlignItems(ui.End).Gap(12).Children(func() {
 				ui.Column(c).Grow(1).Gap(5).Children(func() {
-					ui.Text(c, "今日 "+fmt.Sprint(len(app.articles))+" 篇").FontSize(10.5).TextColor(t.TextMuted)
 					ui.Text(c, "文章").Font("Iowan Old Style, Songti SC, Palatino").FontSize(25).Bold()
 				})
 				ui.Button(c.Key("refresh"), "刷新").OnClick(func() {

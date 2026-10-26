@@ -625,6 +625,7 @@ img { max-width: 100%; display: block; }
 .lookup__def { margin: 0; font-size: 13px; line-height: 1.55; }
 .lookup__hint, .lookup__error { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ink-3); }
 .lookup__error { color: var(--danger); }
+.lookup__actions .chip:disabled { opacity: 1; }
 .lookup__actions {
   flex: none;
   align-self: center;
@@ -795,7 +796,7 @@ html.embed .article__foot a { display: none; }
 
   .feed { columns: 1; }
 
-  .feed-head { padding: 18px 0 13px; margin-bottom: 22px; }
+  .feed-head { display: none; }
 
   .feed-head__hint { display: none; }
 
@@ -1187,7 +1188,6 @@ body.chat-page .page {
     // the feed itself all start at the same place.
     page.innerHTML = `
       <div class="feed-head">
-        <span class="kicker" id="feed-count">今日 · 篇</span>
         <span class="feed-head__hint">点击卡片进入双语对照</span>
       </div>
       <p class="status-line" id="feed-status"></p>
@@ -1195,7 +1195,6 @@ body.chat-page .page {
 
     const status = document.getElementById('feed-status');
     const feed = document.getElementById('feed');
-    const count = document.getElementById('feed-count');
 
     let articles;
     try {
@@ -1207,7 +1206,6 @@ body.chat-page .page {
       return;
     }
 
-    count.textContent = `今日 ${articles.length} 篇`;
     if (!articles.length) {
       feed.innerHTML = `<div class="feed-empty">
         <span class="kicker">Tern</span>
