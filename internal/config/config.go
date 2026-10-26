@@ -60,7 +60,6 @@ type Paths struct {
 	Pi        string
 	Runtime   string
 	Config    string
-	Vocab     string
 	Dict      string
 	DB        string
 	Extension string
@@ -79,7 +78,6 @@ func PathsFor(root string) Paths {
 		Pi:        pi,
 		Runtime:   filepath.Join(data, "runtime", "pi"),
 		Config:    filepath.Join(data, "config.json"),
-		Vocab:     filepath.Join(data, "vocab.json"),
 		Dict:      filepath.Join(data, "dict.json"),
 		DB:        filepath.Join(data, "tern.db"),
 		Extension: filepath.Join(pi, "tern-extension.ts"),

@@ -25,8 +25,9 @@ type Example struct {
 	ZH string `json:"zh"`
 }
 
-// Vocab is a dictionary entry, a word of the article's glossary, or an entry of
-// the reader's own vocabulary book (then SavedAt is set).
+// Vocab is a dictionary entry or a word of the article's vocabulary. SavedAt is
+// only left over from the removed vocabulary book; old articles may still carry
+// it.
 type Vocab struct {
 	Term     string   `json:"term"`
 	Phonetic string   `json:"phonetic,omitempty"`

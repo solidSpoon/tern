@@ -10,7 +10,7 @@
 双语读者，也活在两个语言的夏天里。</em></p>
 
 把网页变成一篇中英对照的阅读页。桌面端是一个真正的 macOS App：除了**文章阅读页**和**对话详情**用
-Web 写，其余界面（文章列表、对话列表、生词本、设置、阅读工具条）全部由
+Web 写，其余界面（文章列表、对话列表、设置、阅读工具条）全部由
 [MyGo](https://github.com/egoist/mygo) 的原生 UI 绘制；同一批页面也通过本机 HTTP 服务暴露给
 iPhone 浏览器。
 
@@ -73,10 +73,9 @@ make release V=0.1.1 SIGN="Developer ID Application: Name (TEAMID)"
 │ MyGo 原生窗口                                                  │
 │ ┌──────────┬───────────────────────────────────────────────┐ │
 │ │ 侧栏(原生)│ 页面（原生）                                    │ │
-│ │ 文章      │  文章列表 / 对话列表 / 生词本 / 设置             │ │
+│ │ 文章      │  文章列表 / 对话列表 / 设置                     │ │
 │ │ 对话      │  阅读页、对话详情：ui.WebView 嵌入的网页         │ │
-│ │ 生词本    │   对照/译文/原文 · A−/A+ · 在浏览器打开         │ │
-│ │ 设置      │                                               │ │
+│ │ 设置      │   对照/译文/原文 · A−/A+ · 在浏览器打开         │ │
 │ └──────────┴───────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -98,13 +97,13 @@ make release V=0.1.1 SIGN="Developer ID Application: Name (TEAMID)"
 ```
 main.go                启动阅读服务 + 桌面窗口
 internal/
-  app/                 MyGo 原生 UI：侧栏 / 文章 / 对话 / 生词本 / 设置 / 阅读页
+  app/                 MyGo 原生 UI：侧栏 / 文章 / 对话 / 设置 / 阅读页
   server/              net/http：JSON API、/media、阅读页（go:embed）
   threads/             会话：一个链接=一个对话，常驻 Pi 子进程、事件日志、入库
   pi/                  Pi RPC 客户端、运行时安装（GitHub release + SHA256 + 解包）、提示词、查词
   publish/             入库：结构校验 → 图片本地化 → 落库
   model/               Article / Block / Vocab / Thread 结构（全站唯一内容契约）
-  store/               JSON 文件存储（文章库、生词本、词典缓存）
+  store/               JSON 文件存储（文章库、设置）与查词缓存
   config/              路径与设置（data/config.json）
 ```
 
@@ -127,9 +126,9 @@ internal/
 
 - 双语块 1:1 对齐：`p / h2 / image / quote / list`，缺译文时降级单语。
 - 宽度 ≥ 1000px（嵌入模式 ≥ 780px）时自动左右双栏：英文在左，中文在右。
-- 点英文单词查词：离线词典 → 查词缓存 → 模型；可加入生词本。
+- 点英文单词查词：离线词典 → 查词缓存 → 模型。
 - 阅读模式、字号记在本机（桌面写进 `data/config.json` 的 `reading`，手机用 localStorage）。
-- 首页、生词本、详情页都支持手机宽度：无横向滚动，底部留出安全区。
+- 首页和详情页都支持手机宽度：无横向滚动，底部留出安全区。
 
 ### API
 
@@ -138,7 +137,6 @@ internal/
 | GET | `/api/articles` | 列表（不含 blocks） |
 | GET | `/api/articles/{id}` | 单篇全文 |
 | POST | `/api/lookup` | `{ term, context? }` → 词典条目 |
-| GET/POST/DELETE | `/api/vocab` | 生词本 |
 | GET | `/api/threads` | 对话列表 |
 | POST | `/api/threads` | `{ url }` → 新对话（第一轮即摄取） |
 | GET | `/api/threads/{id}` | 对话与事件（`busy` 表示正在跑） |
@@ -149,7 +147,7 @@ internal/
 | GET/POST | `/api/config` | 设置（密钥只写不读） |
 | POST | `/api/config/test` | 用当前配置跑一次最小请求 |
 | GET | `/media/*` | 本地图片（内容 hash 命名，长缓存） |
-| GET | `/`、`/a/{id}`、`/vocab` | 阅读页（同一张 HTML） |
+| GET | `/`、`/a/{id}`、`/t/{id}`、`/threads` | 阅读页与对话（同一张 HTML） |
 
 ## 离线词典
 
@@ -181,7 +179,7 @@ make dict
 
 默认在 **`~/Library/Application Support/Tern/`**（`data/` 与 `media/` 都在里面），
 设置页「数据目录 → 选择…」可以换成任意文件夹，切换立即生效、下次启动沿用；
-文章库、图片、生词本、对话和 Pi 运行时都跟着走。开发时用 `./dev.sh`
+文章库、图片、对话和 Pi 运行时都跟着走。开发时用 `./dev.sh`
 （等价于 `TERN_HOME=. PORT=8788 go run .`）；从源码跑会自动用开发版图标，
 端口也和正式版错开（8788 / 8787），两个可以同时开着。
 
@@ -194,8 +192,7 @@ data/
   pi/tern-extension.ts # 内置扩展（每次启动重写）
   pi/sessions/         # Pi 自己的会话文件
   runtime/pi/<版本>/   # Pi 可执行文件
-  tern.db              # 可写 SQLite：AI 查词缓存（生词本以后也放这里）
-  vocab.json           # 生词本
+  tern.db              # 可写 SQLite：AI 查词缓存
 media/                 # 图片（可用 TERN_MEDIA_DIR 覆盖）
 ```
 

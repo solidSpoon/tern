@@ -1,5 +1,5 @@
 // Package app is Tern's desktop interface, drawn by MyGo itself: the feed, the
-// conversations, the vocabulary book and the settings are native UI, while an
+// conversations and the settings are native UI, while an
 // article opens in a web window — the same reading page the phone loads.
 package app
 
@@ -68,11 +68,6 @@ type App struct {
 	readerMode      int
 	readerSize      int
 	localURL        string
-
-	// vocabulary
-	vocab     []model.Vocab
-	vocabErr  string
-	vocabList ui.ListState
 
 	// settings
 	dataRoot     string
@@ -162,7 +157,6 @@ func (app *App) Run() error {
 		app.openWindow()
 		app.loadFeed()
 		app.loadThreads()
-		app.loadVocab()
 		app.loadSettings()
 		app.startPoller()
 	})
@@ -266,9 +260,6 @@ func (app *App) view(c *ui.Context) {
 				case r.Match("/a/{id}"):
 					r.Title(app.readerTitle)
 					app.readerPage(c, r.Param("id"))
-				case r.Match("/vocab"):
-					r.Title("生词本")
-					app.vocabPage(c)
 				case r.Match("/settings"):
 					r.Title("设置")
 					app.settingsPage(c)
@@ -368,11 +359,6 @@ func (app *App) sidebar(c *ui.Context) {
 					ui.Badge(c, fmt.Sprint(app.runningThreads()))
 				}
 			})
-			ui.SidebarItem(c, "/vocab", nil, "生词本").Children(func() {
-				if len(app.vocab) > 0 {
-					ui.Badge(c, fmt.Sprint(len(app.vocab)))
-				}
-			})
 			ui.SidebarItem(c, "/settings", nil, "设置")
 		}).Grow(1)
 		// One surface from the wordmark to the footer: the list does not paint
@@ -468,16 +454,6 @@ func (app *App) loadThreads() {
 		app.refresh(func() {
 			app.threads = list
 			app.threadsErr = ""
-		})
-	}()
-}
-
-func (app *App) loadVocab() {
-	go func() {
-		list := app.store.Vocab()
-		app.refresh(func() {
-			app.vocab = list
-			app.vocabErr = ""
 		})
 	}()
 }

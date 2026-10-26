@@ -413,14 +413,13 @@ func (app *App) switchDataDir(dir string) {
 			app.readerID, app.readerTitle, app.readerSource, app.readerSourceURL = "", "", "", ""
 			app.webURL = ""
 			app.chatID, app.chatTitle, app.chatHost, app.chatArticle, app.chatReady, app.chatErr = "", "", "", "", false, ""
-			app.startErr, app.articlesErr, app.threadsErr, app.vocabErr = "", "", "", ""
+			app.startErr, app.articlesErr, app.threadsErr = "", "", ""
 			app.covers = map[string]*ui.Bitmap{}
 			app.dataRoot = app.settings.Paths().Root
 			app.settingsTone, app.settingsMsg = "ok", "数据目录已切换"
 			app.loadSettings()
 			app.loadFeed()
 			app.loadThreads()
-			app.loadVocab()
 		})
 	}()
 }

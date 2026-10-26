@@ -265,55 +265,6 @@ func itoa(n int) string {
 	return string(digits)
 }
 
-// ---------------------------------------------------------------- vocabulary
-
-// Vocab returns the reader's vocabulary book, newest first.
-func (s *Store) Vocab() []model.Vocab {
-	var list []model.Vocab
-	raw, err := os.ReadFile(s.paths.Vocab)
-	if err == nil {
-		_ = json.Unmarshal(raw, &list)
-	}
-	if list == nil {
-		return []model.Vocab{}
-	}
-	return list
-}
-
-// AddVocab inserts or replaces a word, newest first.
-func (s *Store) AddVocab(entry model.Vocab) ([]model.Vocab, error) {
-	var list []model.Vocab
-	err := s.Lock(func() error {
-		current := s.Vocab()
-		list = make([]model.Vocab, 0, len(current)+1)
-		for _, item := range current {
-			if !strings.EqualFold(item.Term, entry.Term) {
-				list = append(list, item)
-			}
-		}
-		entry.SavedAt = Now()
-		list = append([]model.Vocab{entry}, list...)
-		return WriteJSONAtomic(s.paths.Vocab, list)
-	})
-	return list, err
-}
-
-// RemoveVocab deletes a word.
-func (s *Store) RemoveVocab(term string) ([]model.Vocab, error) {
-	var list []model.Vocab
-	err := s.Lock(func() error {
-		current := s.Vocab()
-		list = make([]model.Vocab, 0, len(current))
-		for _, item := range current {
-			if !strings.EqualFold(item.Term, term) {
-				list = append(list, item)
-			}
-		}
-		return WriteJSONAtomic(s.paths.Vocab, list)
-	})
-	return list, err
-}
-
 // NormalizeTerm lowercases a word and trims punctuation, as a lookup treats it.
 func NormalizeTerm(raw string) string {
 	term := strings.ToLower(strings.TrimSpace(raw))

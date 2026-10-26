@@ -7,7 +7,7 @@ before changing the app or the reading page.
 
 - One desktop window. Everything is **native UI** (`internal/app`, package
   `ui`) except two web pages: an article and a conversation. The feed, the
-  thread list, the vocabulary book, settings, the sidebar and the reading
+  thread list, settings, the sidebar and the reading
   toolbar are drawn by MyGo.
 - One self-contained HTML file (`internal/server/static/index.html`, embedded
   with `go:embed`) serves the article and the conversation, on the desktop and

@@ -79,9 +79,6 @@ func New(st *store.Store, settings *config.Settings, agent *pi.Agent, runtime *p
 	mux.HandleFunc("GET /api/articles", s.listArticles)
 	mux.HandleFunc("GET /api/articles/{id}", s.getArticle)
 	mux.HandleFunc("POST /api/lookup", s.lookup)
-	mux.HandleFunc("GET /api/vocab", s.listVocab)
-	mux.HandleFunc("POST /api/vocab", s.addVocab)
-	mux.HandleFunc("DELETE /api/vocab", s.removeVocab)
 	mux.HandleFunc("GET /api/config", s.getConfig)
 	mux.HandleFunc("POST /api/config", s.saveConfig)
 	mux.HandleFunc("POST /api/config/test", s.testConfig)
@@ -241,43 +238,6 @@ func (s *Server) lookup(w http.ResponseWriter, r *http.Request) {
 		log.Printf("dictionary: %v", err)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"entry": entry, "cached": false})
-}
-
-// ---------------------------------------------------------------- vocabulary
-
-func (s *Server) listVocab(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]any{"vocab": s.Store.Vocab()})
-}
-
-func (s *Server) addVocab(w http.ResponseWriter, r *http.Request) {
-	entry, ok := decode[model.Vocab](w, r, 1<<20)
-	if !ok {
-		return
-	}
-	if entry.Term == "" || entry.ZH == "" {
-		fail(w, http.StatusBadRequest, "a saved word needs term and zh")
-		return
-	}
-	list, err := s.Store.AddVocab(entry)
-	if err != nil {
-		fail(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"vocab": list})
-}
-
-func (s *Server) removeVocab(w http.ResponseWriter, r *http.Request) {
-	term := store.NormalizeTerm(r.URL.Query().Get("term"))
-	if term == "" {
-		fail(w, http.StatusBadRequest, "no word to remove")
-		return
-	}
-	list, err := s.Store.RemoveVocab(term)
-	if err != nil {
-		fail(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"vocab": list})
 }
 
 // ---------------------------------------------------------------- config

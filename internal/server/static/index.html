@@ -665,18 +665,6 @@ img { max-width: 100%; display: block; }
 .lookup__def { margin: 0; font-size: 13px; line-height: 1.55; }
 .lookup__hint, .lookup__error { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ink-3); }
 .lookup__error { color: var(--danger); }
-.lookup__actions .chip:disabled { opacity: 1; }
-.lookup__actions {
-  flex: none;
-  align-self: center;
-  display: flex;
-  gap: 6px;
-  /* Both labels keep the same room, so saving does not re-wrap the meaning. */
-  min-width: 84px;
-  justify-content: flex-end;
-}
-.chip--small { padding: 4px 10px; font-size: 11.5px; }
-
 .chip {
   border: 1px solid transparent;
   background: var(--ink);
@@ -689,7 +677,6 @@ img { max-width: 100%; display: block; }
 
 .chip:disabled { opacity: 0.55; cursor: default; }
 
-.chip--ghost { background: transparent; color: var(--ink-2); border-color: var(--rule); }
 
 /* ------------------------------------------------------------------ vocab */
 .panel { max-width: 640px; margin: 0 auto; padding-top: 46px; }
@@ -703,35 +690,6 @@ img { max-width: 100%; display: block; }
 }
 
 .panel__lede { margin: 0 0 26px; font-size: 14px; line-height: 1.8; color: var(--ink-2); }
-
-.vocab { list-style: none; margin: 0; padding: 0; }
-
-.vocab__item { padding: 18px 0 16px; border-top: 1px solid var(--rule); }
-
-.vocab__head { display: flex; align-items: baseline; gap: 10px; }
-
-.vocab__head strong { font-family: var(--serif); font-size: 18px; font-weight: 600; }
-
-.vocab__phonetic { font-size: 12px; color: var(--ink-3); }
-
-.vocab__remove {
-  margin-left: auto;
-  background: none;
-  border: none;
-  font-size: 19px;
-  line-height: 1;
-  color: var(--ink-3);
-  cursor: pointer;
-  padding: 0 4px;
-}
-
-.vocab__def { margin: 6px 0 0; font-size: 14px; }
-
-.vocab__gloss { margin: 3px 0 0; font-size: 12.5px; font-style: italic; color: var(--ink-3); }
-
-.vocab__example { margin: 9px 0 0; font-size: 12.5px; line-height: 1.65; color: var(--ink-2); }
-
-.vocab__example span { display: block; margin-top: 2px; color: var(--ink-3); }
 
 .empty { max-width: 520px; margin: 90px auto; text-align: center; }
 
@@ -1067,7 +1025,6 @@ body.chat-page .page {
       <nav class="nav">
         <a class="nav__link" href="/" data-nav="home">首页</a>
         <a class="nav__link" href="/threads" data-nav="threads">对话</a>
-        <a class="nav__link" href="/vocab" data-nav="vocab">生词本</a>
       </nav>
       <button class="theme-toggle" id="theme-toggle" type="button" aria-label="切换到深色模式">☾</button>
     </div>
@@ -1564,7 +1521,7 @@ body.chat-page .page {
 
     function paint() {
       if (!bar || !state) return;
-      const { hit, entry, error, loading, saved } = state;
+      const { hit, entry, error, loading } = state;
       bar.classList.add('is-open');
       bar.innerHTML = `<div class="lookup__inner">
         <div class="lookup__text">
@@ -1577,42 +1534,19 @@ body.chat-page .page {
           ${error ? `<p class="lookup__error">${esc(error)}</p>` : ''}
           ${entry ? `<p class="lookup__def">${esc(entry.zh)}</p>` : ''}
         </div>
-        <div class="lookup__actions">
-          <button class="chip chip--small" data-save ${entry && !saved ? '' : 'disabled'}>${
-            saved ? '已加入' : '＋ 生词本'
-          }</button>
-        </div>
       </div>`;
-      const saveButton = bar.querySelector('[data-save]');
-      if (saveButton && entry) {
-        saveButton.addEventListener('click', async () => {
-          // Mark it saved right away: the request can finish behind the panel,
-          // and nothing is redrawn while the button is under the finger.
-          state = { ...state, saved: true };
-          saveButton.textContent = '已加入';
-          saveButton.disabled = true;
-          later();
-          try {
-            await api('/api/vocab', { method: 'POST', body: JSON.stringify(entry) });
-          } catch (saveError) {
-            state = { ...state, saved: false, error: saveError.message };
-            paint();
-            later();
-          }
-        });
-      }
     }
 
     async function show(hit) {
       mark(hit);
       const known = local(hit.term) || cache.get(hit.term.toLowerCase());
       if (known) {
-        state = { hit, entry: known, error: '', loading: false, saved: false };
+        state = { hit, entry: known, error: '', loading: false };
         paint();
         later();
         return;
       }
-      state = { hit, entry: null, error: '', loading: true, saved: false };
+      state = { hit, entry: null, error: '', loading: true };
       paint();
       clearTimer();
       try {
@@ -1622,13 +1556,13 @@ body.chat-page .page {
         });
         cache.set(hit.term.toLowerCase(), result.entry);
         if (state && state.hit.term === hit.term) {
-          state = { hit, entry: result.entry, error: '', loading: false, saved: false };
+          state = { hit, entry: result.entry, error: '', loading: false };
           paint();
           later();
         }
       } catch (error) {
         if (state && state.hit.term === hit.term) {
-          state = { hit, entry: null, error: error.message, loading: false, saved: false };
+          state = { hit, entry: null, error: error.message, loading: false };
           paint();
           later();
         }
@@ -1664,84 +1598,6 @@ body.chat-page .page {
 
     return { show, mount };
   }
-
-  // ------------------------------------------------------------------ vocab
-  async function renderVocab() {
-    document.title = '生词本 · Tern';
-    setNav('vocab');
-    page.innerHTML = `<section class="panel">
-      <h1 class="panel__title" id="vocab-count">…</h1>
-      <p class="panel__lede">阅读时点英文单词，再点「加入生词本」，就会出现在这里。</p>
-      <p class="status-line" id="vocab-status">读取中…</p>
-      <ul class="vocab" id="vocab-list"></ul>
-    </section>`;
-
-    const status = document.getElementById('vocab-status');
-    const listNode = document.getElementById('vocab-list');
-    const count = document.getElementById('vocab-count');
-
-    let vocab;
-    try {
-      ({ vocab } = await api('/api/vocab'));
-    } catch (error) {
-      status.textContent = error.message;
-      status.classList.add('is-error');
-      count.textContent = '';
-      return;
-    }
-
-    const render = () => {
-      count.textContent = `${vocab.length} 个词`;
-      status.textContent = vocab.length ? '' : '还是空的。';
-      status.classList.toggle('is-error', false);
-      listNode.innerHTML = vocab
-        .map(
-          (item) => `<li class="vocab__item">
-            <div class="vocab__head">
-              <strong>${esc(item.term)}</strong>
-              ${item.phonetic ? `<span class="vocab__phonetic">/${esc(item.phonetic)}/</span>` : ''}
-              ${item.pos ? `<span class="kicker">${esc(item.pos)}</span>` : ''}
-              <button class="vocab__remove" aria-label="移除 ${esc(item.term)}" data-remove="${esc(item.term)}">×</button>
-            </div>
-            <p class="vocab__def">${esc(item.zh)}</p>
-            ${item.en ? `<p class="vocab__gloss">${esc(item.en)}</p>` : ''}
-            ${item.example
-              ? `<p class="vocab__example">${esc(item.example.en)}<span>${esc(item.example.zh)}</span></p>`
-              : ''}
-          </li>`,
-        )
-        .join('');
-
-      listNode.querySelectorAll('[data-remove]').forEach((button) => {
-        button.addEventListener('click', async () => {
-          button.disabled = true;
-          try {
-            const result = await api(`/api/vocab?term=${encodeURIComponent(button.dataset.remove)}`, {
-              method: 'DELETE',
-            });
-            vocab = result.vocab;
-            render();
-          } catch (error) {
-            button.disabled = false;
-            status.textContent = error.message;
-            status.classList.add('is-error');
-          }
-        });
-      });
-    };
-    render();
-  }
-
-  // ------------------------------------------------------------------ threads
-  // The phone has no import dialog of its own, so these two pages are it: the
-  // list starts a conversation from a link, the detail shows what the agent is
-  // doing and lets the reader keep talking.
-
-  let chatTimer = 0;
-  const stopChat = () => {
-    if (chatTimer) clearTimeout(chatTimer);
-    chatTimer = 0;
-  };
 
   function threadHost(url) {
     try {
@@ -2082,7 +1938,6 @@ body.chat-page .page {
     document.body.classList.toggle('chat-page', /^\/t\//.test(path));
     if (path === '/') return renderHome();
     if (path === '/threads') return renderThreads();
-    if (path === '/vocab') return renderVocab();
     const thread = path.match(/^\/t\/([^/]+)$/);
     if (thread) return renderThread(decodeURIComponent(thread[1]));
     const article = path.match(/^\/a\/([^/]+)$/);

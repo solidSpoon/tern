@@ -57,13 +57,6 @@ func TestSnapshot(t *testing.T) {
 				{ID: "c3", URL: "https://example.com/old-story", State: model.ThreadError, UpdatedAt: now},
 			}
 		}},
-		{"vocab", "/vocab", func(app *App) {
-			app.vocab = []model.Vocab{
-				{Term: "palimpsest", Phonetic: "ˈpælɪmpsest", Pos: "n", ZH: "重写本", EN: "a manuscript written over an erased one",
-					Example: &model.Example{EN: "The parchment was reused as a palimpsest.", ZH: "这张羊皮纸被当作重写本再次使用。"}},
-				{Term: "vellum", Pos: "n", ZH: "犊皮纸", EN: "fine parchment from calfskin"},
-			}
-		}},
 		{"settings", "/settings", func(app *App) {
 			app.install = pi.Progress{State: "done", Progress: 1, Message: "installed and switched to Pi 1.4.0"}
 		}},
