@@ -411,7 +411,8 @@ func (app *App) switchDataDir(dir string) {
 			}
 			// Everything on screen belonged to the old root.
 			app.readerID, app.readerTitle, app.readerSource, app.readerSourceURL = "", "", "", ""
-			app.threadID, app.thread, app.chatItems, app.chatErr = "", nil, nil, ""
+			app.webURL = ""
+			app.chatID, app.chatTitle, app.chatHost, app.chatArticle, app.chatReady, app.chatErr = "", "", "", "", false, ""
 			app.startErr, app.articlesErr, app.threadsErr, app.vocabErr = "", "", "", ""
 			app.covers = map[string]*ui.Bitmap{}
 			app.dataRoot = app.settings.Paths().Root

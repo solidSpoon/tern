@@ -6,15 +6,19 @@ before changing the app or the reading page.
 ## Shape of the app
 
 - One desktop window. Everything is **native UI** (`internal/app`, package
-  `ui`) except the article body: the feed, conversations, vocabulary book,
-  settings, the sidebar and the reading toolbar are drawn by MyGo.
-- The reading page is one self-contained HTML file
-  (`internal/server/static/index.html`, embedded with `go:embed`) used twice:
-  - desktop: `ui.WebView` inside the window, loaded with `?embed=1`, its own
-    masthead and toolbar hidden; the native toolbar drives it through
+  `ui`) except two web pages: an article and a conversation. The feed, the
+  thread list, the vocabulary book, settings, the sidebar and the reading
+  toolbar are drawn by MyGo.
+- One self-contained HTML file (`internal/server/static/index.html`, embedded
+  with `go:embed`) serves the article and the conversation, on the desktop and
+  the phone:
+  - desktop article: `ui.WebView` inside the window, loaded with `?embed=1`, its
+    own masthead and toolbar hidden; the native toolbar drives it through
     `window.tern.setMode()/setSize()`;
-  - phone: the same URL without `embed`, with the page's own header and
-    controls, served by the Go HTTP server.
+  - desktop conversation: the same web view at `/t/<id>?embed=1`, under a native
+    bar with the way back and the article link;
+  - phone: `/threads`, `/t/<id>` and `/a/<id>` without `embed`, each with its own
+    header and controls.
 - Data lives in `data/` and `media/` under a **user-chosen root**: by default
   `~/Library/Application Support/Tern`, changed in Settings → 数据目录 (the
   pointer is `~/Library/Application Support/Tern/root.txt`, `TERN_HOME`
@@ -24,10 +28,10 @@ before changing the app or the reading page.
 - The phone reaches the same server through Surge Ponte at
   `STUDIO.sgponte:<port>` — the address the app shows and copies. `TERN_PONTE`
   renames the machine and `TERN_PUBLIC_URL` replaces the whole address.
-- Two pages of that same HTML file exist for the phone only: `/threads` starts
-  a conversation from a link and lists them, `/t/<id>` shows one conversation
-  and continues it. They use the same JSON API as the native pages; the desktop
-  keeps its native chat and does not link to them.
+- A conversation is a web page: `/t/<id>` is embedded in the desktop window's
+  web view under a native bar (back, article link), and loaded directly by the
+  phone. `/threads` — the list and the link box — is for the phone only; the
+  desktop keeps its native thread list. All of them use the same JSON API.
 
 ## Hard rule: keep the UI still
 

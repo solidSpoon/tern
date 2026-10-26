@@ -57,23 +57,6 @@ func TestSnapshot(t *testing.T) {
 				{ID: "c3", URL: "https://example.com/old-story", State: model.ThreadError, UpdatedAt: now},
 			}
 		}},
-		{"chat", "/t/a1", func(app *App) {
-			app.thread = &model.Thread{
-				ID: "a1", URL: "https://en.wikipedia.org/wiki/Inkwell", Title: "墨水瓶",
-				State: model.ThreadIdle, Article: "inkwell", UpdatedAt: now,
-				Events: []model.ThreadEvent{
-					{ID: "e1", Type: model.EventUser, Text: "https://en.wikipedia.org/wiki/Inkwell", At: now},
-					{ID: "e2", Type: model.EventTool, Tool: "bash", Args: `{"command":"ego-browser nodejs < extract.mjs"}`, Status: "ok", At: now},
-					{ID: "e3", Type: model.EventTool, Tool: "read", Args: `{"path":"/Users/me/data/threads/a1/work/page.txt"}`, Status: "ok", At: now},
-					{ID: "e4", Type: model.EventTool, Tool: "write", Args: `{"path":"article.json"}`, Status: "ok", At: now},
-					{ID: "e5", Type: model.EventTool, Tool: "publish_article", Status: "ok", Detail: "已入库：inkwell（12 段，29 个生词已预热）", At: now},
-					{ID: "e6", Type: model.EventAssistant, Text: "已入库，**12 段**，29 个生词也预热好了。\n\n- 原文来自 Wikipedia 的 Inkwell 条目\n- 第三段里的 *traveling inkwell* 加了译者注", At: now},
-				},
-			}
-			app.threadID = "a1"
-			app.chatItems = groupEvents(app.thread.Events)
-			app.draft = ""
-		}},
 		{"vocab", "/vocab", func(app *App) {
 			app.vocab = []model.Vocab{
 				{Term: "palimpsest", Phonetic: "ˈpælɪmpsest", Pos: "n", ZH: "重写本", EN: "a manuscript written over an erased one",

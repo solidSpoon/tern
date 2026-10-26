@@ -49,37 +49,6 @@ func TestTransientStatesKeepLayout(t *testing.T) {
 		}
 	})
 
-	t.Run("chat", func(t *testing.T) {
-		app := newTestApp(t)
-		app.router.Push("/t/a1")
-		app.threadID = "a1"
-		app.thread = &model.Thread{
-			ID: "a1", URL: "https://example.com/story", State: model.ThreadIdle,
-			UpdatedAt: now, Events: []model.ThreadEvent{
-				{ID: "e1", Type: model.EventUser, Text: "https://example.com/story", At: now},
-			},
-		}
-		app.chatItems = groupEvents(app.thread.Events)
-		tt := ui.NewTester(app.view, 1000, 720)
-		quiet := yOf(t, tt, "发送")
-
-		app.thread.State = model.ThreadRunning
-		tt.Frame()
-		if y := yOf(t, tt, "发送"); y != quiet {
-			t.Errorf("working moved the composer by %.1f DIPs", y-quiet)
-		}
-		if !tt.HasText("Agent 正在工作…") {
-			t.Error("the working state is not shown")
-		}
-
-		app.thread.State = model.ThreadError
-		app.thread.Error = "the model call failed"
-		tt.Frame()
-		if y := yOf(t, tt, "发送"); y != quiet {
-			t.Errorf("an error moved the composer by %.1f DIPs", y-quiet)
-		}
-	})
-
 	t.Run("settings", func(t *testing.T) {
 		app := newTestApp(t)
 		app.router.Push("/settings")

@@ -14,7 +14,6 @@ import (
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
-	"github.com/egoist/mygo/ui/markdown"
 
 	"github.com/solidSpoon/tern-go/internal/config"
 	"github.com/solidSpoon/tern-go/internal/model"
@@ -50,18 +49,17 @@ type App struct {
 	starting   bool
 	startErr   string
 
-	// one conversation
-	thread    *model.Thread
-	threadID  string
-	chatItems []chatItem
-	chat      ui.ListState
-	chatErr   string
-	draft     string
-	sending   bool
-	md        markdown.Options
+	// one conversation: the web page in the reading pane, a native bar above it
+	chatID      string
+	chatTitle   string
+	chatHost    string
+	chatArticle string
+	chatReady   bool
+	chatErr     string
 
 	// the reading pane: one web view under a native toolbar
 	reader          *mygo.WebView
+	webURL          string
 	readerID        string
 	readerTitle     string
 	readerSource    string
@@ -92,8 +90,8 @@ type App struct {
 	install      pi.Progress
 	articleCount int
 
-	pollMu sync.Mutex
-	pollID string
+	pollMu      sync.Mutex
+	enteredPath string
 }
 
 // indexOf finds a preference's index, 0 when it is unknown.
@@ -254,6 +252,7 @@ func (app *App) view(c *ui.Context) {
 		ui.Column(c).Grow(1).FillHeight().Background(t.Background).Children(func() {
 			app.dragStrip(c)
 			app.router.View(c, func(r *ui.Route) {
+				app.pageEntered(app.router.Path())
 				switch {
 				case r.Match("/"):
 					r.Title("文章")
@@ -263,7 +262,7 @@ func (app *App) view(c *ui.Context) {
 					app.threadsPage(c)
 				case r.Match("/t/{id}"):
 					r.Title("对话")
-					app.chatPage(c, r.Param("id"))
+					app.chatWebPage(c, r.Param("id"))
 				case r.Match("/a/{id}"):
 					r.Title(app.readerTitle)
 					app.readerPage(c, r.Param("id"))
@@ -281,6 +280,24 @@ func (app *App) view(c *ui.Context) {
 			})
 		})
 	})
+}
+
+// pageEntered runs once when the window moves to another page: the conversation
+// poller belongs to the chat page, and the thread list is re-read so threads
+// started from the phone show up.
+func (app *App) pageEntered(path string) {
+	if path == app.enteredPath {
+		return
+	}
+	app.enteredPath = path
+	if !strings.HasPrefix(path, "/t/") {
+		app.pollMu.Lock()
+		app.chatID = ""
+		app.pollMu.Unlock()
+	}
+	if path == "/threads" {
+		app.loadThreads()
+	}
 }
 
 // sidebarHeaderHeight is the room the window controls take at the top of the
@@ -487,15 +504,23 @@ func (app *App) loadSettings() {
 	}()
 }
 
-// startPoller follows the conversation on screen while the agent works.
+// startPoller watches the conversation whose web page is on screen. The page
+// keeps itself up to date; this only keeps the sidebar's badge and the feed
+// honest while a round runs, and stops when another page is opened.
 func (app *App) startPoller() {
 	go func() {
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
+		var lastID string
+		var lastState model.ThreadState
+		var lastArticle string
 		for range ticker.C {
 			app.pollMu.Lock()
-			id := app.pollID
+			id := app.chatID
 			app.pollMu.Unlock()
+			if id != lastID {
+				lastID, lastState, lastArticle = id, "", ""
+			}
 			if id == "" || app.win == nil {
 				continue
 			}
@@ -503,66 +528,21 @@ func (app *App) startPoller() {
 			if err != nil {
 				continue
 			}
+			if thread.State == lastState && thread.Article == lastArticle {
+				continue
+			}
+			lastState, lastArticle = thread.State, thread.Article
 			app.refresh(func() {
-				if app.threadID != id || sameThread(app.thread, thread) {
-					return
+				if app.chatID == id {
+					app.chatTitle = thread.Title
+					app.chatArticle = thread.Article
 				}
-				app.applyThread(thread)
+				app.loadThreads()
+				if thread.Article != "" {
+					app.loadFeed()
+				}
 			})
 		}
-	}()
-}
-
-// sameThread is the poller's guard against repainting a conversation that has
-// not changed since the last frame.
-func sameThread(a, b *model.Thread) bool {
-	if a == nil || b == nil {
-		return false
-	}
-	if a.ID != b.ID || a.State != b.State || a.Article != b.Article || a.Error != b.Error {
-		return false
-	}
-	if len(a.Events) != len(b.Events) {
-		return false
-	}
-	if n := len(a.Events); n > 0 {
-		x, y := a.Events[n-1], b.Events[n-1]
-		if x.ID != y.ID || x.Status != y.Status || x.Text != y.Text {
-			return false
-		}
-	}
-	return true
-}
-
-func (app *App) applyThread(thread *model.Thread) {
-	app.thread = thread
-	app.threadID = thread.ID
-	app.chatItems = groupEvents(thread.Events)
-	app.chatErr = ""
-
-	app.pollMu.Lock()
-	app.pollID = thread.ID
-	app.pollMu.Unlock()
-
-	// Keep the list's badges and the feed honest when a round finishes.
-	if thread.State != model.ThreadRunning {
-		app.loadThreads()
-		if thread.Article != "" {
-			app.loadFeed()
-		}
-	}
-}
-
-func (app *App) loadThread(id string) {
-	go func() {
-		thread, err := app.mgr.Get(id)
-		app.refresh(func() {
-			if err != nil {
-				app.chatErr = err.Error()
-				return
-			}
-			app.applyThread(thread)
-		})
 	}()
 }
 

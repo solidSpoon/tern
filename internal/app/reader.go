@@ -197,14 +197,28 @@ func (app *App) loadReader(id string) {
 	}()
 }
 
-// showReader loads the page into the web view. Loading a page per article keeps
-// the reader identical to the phone's, and the native toolbar above it stays.
-func (app *App) showReader(id string) {
+// showWeb loads url in the reading pane unless it is already there: one web
+// view carries both the article page and a conversation.
+func (app *App) showWeb(url string) error {
 	if app.reader == nil {
-		app.readerErr = "the web view could not be created"
-		return
+		return fmt.Errorf("the web view could not be created")
 	}
-	if err := app.reader.Page().LoadURL(app.readerURL(id, true)); err != nil {
+	if app.webURL == url {
+		return nil
+	}
+	if err := app.reader.Page().LoadURL(url); err != nil {
+		app.webURL = ""
+		return err
+	}
+	app.webURL = url
+	return nil
+}
+
+// showReader loads the article into the web view. Loading a page per article
+// keeps the reader identical to the phone's, and the native toolbar above it
+// stays.
+func (app *App) showReader(id string) {
+	if err := app.showWeb(app.readerURL(id, true)); err != nil {
 		app.readerErr = err.Error()
 	}
 }

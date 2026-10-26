@@ -1,13 +1,9 @@
 package app
 
 import (
-	"encoding/json"
-	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
-	"github.com/egoist/mygo/ui/markdown"
 
 	"github.com/solidSpoon/tern-go/internal/model"
 )
@@ -113,7 +109,6 @@ func (app *App) startThread() {
 				return
 			}
 			app.newURL = ""
-			app.applyThread(thread)
 			app.loadThreads()
 			app.router.Push("/t/" + thread.ID)
 		})
@@ -122,318 +117,106 @@ func (app *App) startThread() {
 
 // ------------------------------------------------------------------ chat
 
-// chatItem is one thing the conversation list shows: an event, or a run of tool
-// calls merged into chips.
-type chatItem struct {
-	kind  string // "event" or "tools"
-	event model.ThreadEvent
-	tools []toolChip
-}
-
-type toolChip struct {
-	key    string
-	tool   string
-	hint   string
-	detail string
-	status string
-	count  int
-}
-
-// groupEvents merges consecutive tool calls into one line and, inside it,
-// repeated calls of the same tool on the same thing into "read x3".
-func groupEvents(events []model.ThreadEvent) []chatItem {
-	items := make([]chatItem, 0, len(events))
-	var run []toolChip
-
-	flush := func() {
-		if len(run) > 0 {
-			items = append(items, chatItem{kind: "tools", tools: run})
-			run = nil
-		}
-	}
-
-	for _, event := range events {
-		if event.Type != model.EventTool {
-			flush()
-			items = append(items, chatItem{kind: "event", event: event})
-			continue
-		}
-		hint := shortHint(event.Tool, event.Args)
-		if event.Detail != "" {
-			hint = clipText(strings.Split(event.Detail, "\n")[0], 40)
-		}
-		status := "ok"
-		if event.Status == "error" {
-			status = "error"
-		}
-		if n := len(run); n > 0 && run[n-1].tool == event.Tool && run[n-1].hint == hint {
-			run[n-1].count++
-			if status == "error" {
-				run[n-1].status = "error"
-			}
-			continue
-		}
-		run = append(run, toolChip{
-			key:    event.ID,
-			tool:   event.Tool,
-			hint:   hint,
-			detail: argHint(event.Tool, event.Args),
-			status: status,
-			count:  1,
-		})
-	}
-	flush()
-	return items
-}
-
-func argHint(tool, args string) string {
-	if args == "" {
-		return ""
-	}
-	var parsed map[string]any
-	raw := args
-	if json.Unmarshal([]byte(args), &parsed) == nil {
-		for _, key := range []string{"command", "path", "pattern"} {
-			if text, ok := parsed[key].(string); ok && text != "" {
-				raw = text
-				break
-			}
-		}
-	}
-	return strings.TrimSpace(strings.Split(raw, "\n")[0])
-}
-
-// shortHint keeps the telling bit of a call: the first word of a command, or a
-// file's name.
-func shortHint(tool, args string) string {
-	raw := argHint(tool, args)
-	if raw == "" {
-		return ""
-	}
-	if tool == "bash" {
-		command := raw
-		if index := strings.Index(command, "&&"); index >= 0 {
-			command = strings.TrimSpace(command[index+2:])
-		}
-		fields := strings.Fields(command)
-		if len(fields) == 0 {
-			return ""
-		}
-		first := strings.Trim(fields[0], `"'`)
-		return clipText(filepath.Base(first), 16)
-	}
-	cleaned := strings.ReplaceAll(raw, "\\", "/")
-	parts := strings.Split(cleaned, "/")
-	for i := len(parts) - 1; i >= 0; i-- {
-		if trimmed := strings.TrimSpace(parts[i]); trimmed != "" {
-			return clipText(trimmed, 18)
-		}
-	}
-	return ""
-}
-
-func clipText(s string, n int) string {
-	runes := []rune(s)
-	if len(runes) <= n {
-		return s
-	}
-	return string(runes[:n])
-}
-
-func (app *App) chatPage(c *ui.Context, id string) {
+// chatWebPage shows one conversation: the page the phone uses, in the window's
+// web view, under a native bar that owns the way back and the link to the
+// finished article. The page itself has the log and the composer.
+func (app *App) chatWebPage(c *ui.Context, id string) {
 	t := c.Theme()
 
-	if app.threadID != id {
-		app.threadID = id
-		app.thread = nil
-		app.chatItems = nil
-		app.chatErr = ""
+	if id != app.chatID {
 		app.pollMu.Lock()
-		app.pollID = ""
+		app.chatID = id
 		app.pollMu.Unlock()
-		app.loadThread(id)
+		app.readerID = ""
+		app.chatTitle = ""
+		app.chatHost = ""
+		app.chatArticle = ""
+		app.chatReady = false
+		app.chatErr = ""
+		app.loadChat(id)
 	}
 
-	thread := app.thread
 	ui.Column(c).Fill().Children(func() {
-		// Header
-		bar := ui.Row(c).Padding(16, 28, 12).Gap(12).AlignItems(ui.Center).DragWindow()
+		bar := ui.Row(c).Padding(8, 24, 8).Gap(10).AlignItems(ui.Center).DragWindow()
 		bar.Children(func() {
-			if ui.Button(c.Key("back"), "← 对话").Clicked() {
+			if ui.Button(c.Key("chat-back"), "← 对话").Clicked() {
 				app.router.Push("/threads")
 			}
-			ui.Column(c).Grow(1).Gap(1).Children(func() {
-				if thread != nil {
-					ui.Text(c, hostOf(thread.URL)).FontSize(13).Bold().SingleLine()
-					ui.Text(c, thread.URL).FontSize(10.5).TextColor(t.TextMuted).SingleLine()
-				} else {
-					ui.Text(c, "对话").FontSize(13).Bold()
+			ui.Column(c).Grow(1).MinWidth(120).Gap(0).Children(func() {
+				title := app.chatTitle
+				if title == "" {
+					title = app.chatHost
+				}
+				if title == "" {
+					title = "对话"
+				}
+				ui.Text(c, title).Font("Iowan Old Style, Songti SC, Palatino").
+					FontSize(12.5).Bold().SingleLine()
+				if app.chatHost != "" {
+					ui.Text(c, app.chatHost).FontSize(9.5).TextColor(t.TextMuted).SingleLine()
 				}
 			})
-			if thread != nil && thread.Article != "" {
-				if ui.PrimaryButton(c.Key("read"), "阅读全文 →").Clicked() {
-					app.router.Push("/a/" + thread.Article)
+			if app.chatArticle != "" {
+				if ui.PrimaryButton(c.Key("chat-read"), "阅读全文 →").Clicked() {
+					app.router.Push("/a/" + app.chatArticle)
 				}
 			}
 		})
 		ui.Divider(c)
 
-		// Conversation. Loading and failing keep the same frame: only what
-		// fills the list area changes, never whether the composer exists.
-		switch {
-		case app.chatErr != "":
-			ui.Column(c).Grow(1).Center().Padding(40).Children(func() {
-				ui.Text(c, "打不开这个对话").FontSize(17).Bold()
-				ui.Text(c, app.chatErr).FontSize(12).TextColor(t.Danger).TextAlign(ui.Center).MaxWidth(420)
+		if app.chatErr != "" || app.reader == nil {
+			detail := app.chatErr
+			if detail == "" {
+				detail = "这个窗口不能嵌入网页（系统 webview 不可用）。可以在浏览器里打开这个对话。"
+			}
+			emptyState(c, "打不开这个对话", detail, func() {
+				ui.Row(c).Gap(8).Children(func() {
+					if ui.PrimaryButton(c, "在浏览器打开").Clicked() {
+						c.OpenURL(app.chatURL(id, false))
+					}
+					if ui.Button(c, "重试").Clicked() {
+						app.chatID = ""
+					}
+				})
 			})
-		case thread == nil:
-			ui.Column(c).Grow(1).Center().Gap(8).Children(func() {
+			return
+		}
+		if !app.chatReady {
+			ui.Column(c).Fill().Center().Gap(8).Children(func() {
 				ui.Spinner(c)
-				ui.Text(c, "读取对话…").FontSize(12).TextColor(t.TextMuted)
+				ui.Text(c, "正在打开对话…").FontSize(12).TextColor(t.TextMuted)
 			})
-		default:
-			app.chat.Key = func(row int) any { return app.chatItems[row].key() }
-			app.chat.FollowEnd = true
-			app.chat.FollowAnimation = &ui.Smooth
-			ui.List(c, &app.chat, len(app.chatItems), func(row int) {
-				app.chatRow(c, app.chatItems[row])
-			}).Grow(1).Padding(18, 28)
+			return
 		}
-
-		// The status strip is always here: working, failed, or quiet.
-		status, color, busy := "", t.TextMuted, false
-		if thread != nil {
-			switch {
-			case thread.State == model.ThreadRunning:
-				status, color, busy = "Agent 正在工作…", t.TextMuted, true
-			case thread.State == model.ThreadError && thread.Error != "":
-				status, color = thread.Error, t.Danger
-			}
-		}
-		ui.Row(c).Padding(0, 28, 0).Children(func() {
-			statusLine(c, 22, status, color, busy)
-		})
-
-		// Composer: always built, disabled while there is nothing to send to.
-		ui.Divider(c)
-		ui.Row(c).Padding(12, 28, 16).Gap(10).AlignItems(ui.End).Children(func() {
-			placeholder := "继续提要求，例如：把第三段翻得更口语一点"
-			switch {
-			case thread == nil:
-				placeholder = "读取对话…"
-			case thread.State == model.ThreadRunning:
-				placeholder = "Agent 干活中……"
-			case thread.Article == "":
-				placeholder = "补充说明，或让它继续"
-			}
-			disabled := thread == nil || thread.State == model.ThreadRunning || app.sending
-			ui.TextArea(c, &app.draft).
-				Lines(1, 5).
-				Grow(1).
-				Placeholder(placeholder).
-				Disabled(disabled)
-			ui.PrimaryButton(c.Key("send"), "发送").
-				Disabled(disabled || strings.TrimSpace(app.draft) == "").
-				OnClick(func() { app.sendDraft() })
-		})
-		if c.Shortcut(ui.Cmd, ui.KeyEnter) {
-			app.sendDraft()
-		}
+		ui.WebView(c, app.reader).Grow(1)
 	})
 }
 
-func (app *App) chatRow(c *ui.Context, item chatItem) {
-	t := c.Theme()
-	if item.kind == "tools" {
-		row := ui.Row(c).Wrap().FillWidth().GapX(14).GapY(2).Padding(2, 0).Margin(0, 0, 12, 0)
-		row.Children(func() {
-			for _, chip := range item.tools {
-				color := t.TextMuted
-				if chip.status == "error" {
-					color = t.Danger
-				}
-				label := chip.tool
-				if chip.hint != "" {
-					label += " " + chip.hint
-				}
-				if chip.count > 1 {
-					label += fmt.Sprintf(" ×%d", chip.count)
-				}
-				element := ui.Text(c, "· "+label).
-					Font("ui-monospace, SFMono-Regular, Menlo, monospace").
-					FontSize(10.5).TextColor(color).SingleLine()
-				if chip.detail != "" {
-					element.Tooltip(chip.detail)
-				}
-			}
-		})
-		return
-	}
-
-	event := item.event
-	switch event.Type {
-	case model.EventUser:
-		ui.Column(c).Gap(4).Padding(0, 0, 10, 0).Children(func() {
-			ui.Text(c, "你").FontSize(10).TextColor(t.TextMuted)
-			ui.Column(c).MaxWidth(560).AlignSelf(ui.Start).
-				Padding(10, 14).Radius(10).Background(t.Surface).
-				Children(func() {
-					ui.Text(c, event.Text).FontSize(13).TextColor(t.Text).LineHeight(1.5)
-				})
-		})
-
-	case model.EventAssistant:
-		ui.Column(c).Gap(5).Padding(0, 0, 14, 0).Children(func() {
-			ui.Text(c, "Tern").FontSize(10).TextColor(t.TextMuted)
-			ui.Column(c).MaxWidth(640).AlignSelf(ui.Start).Children(func() {
-				markdown.View(c, event.Text, &app.md)
-			})
-		})
-
-	case model.EventStatus:
-		color := t.TextMuted
-		if strings.HasPrefix(event.Text, "失败") {
-			color = t.Danger
-		}
-		ui.Text(c, event.Text).FontSize(11.5).TextColor(color).
-			Padding(0, 0, 10, 0).LineHeight(1.5)
-	}
-}
-
-// key names a chat item in the list, so rows keep their state as events come.
-func (item chatItem) key() string {
-	if item.kind == "tools" {
-		if len(item.tools) > 0 {
-			return "tools-" + item.tools[0].key
-		}
-		return "tools"
-	}
-	return item.event.ID + item.event.At
-}
-
-func (app *App) sendDraft() {
-	text := strings.TrimSpace(app.draft)
-	if text == "" || app.sending || app.thread == nil {
-		return
-	}
-	if app.thread.State == model.ThreadRunning {
-		return
-	}
-	id := app.thread.ID
-	app.sending = true
-	app.draft = ""
-	app.chatErr = ""
+func (app *App) loadChat(id string) {
 	go func() {
-		thread, err := app.mgr.PostMessage(id, text)
+		thread, err := app.mgr.Get(id)
 		app.refresh(func() {
-			app.sending = false
 			if err != nil {
 				app.chatErr = err.Error()
 				return
 			}
-			if app.threadID == id {
-				app.applyThread(thread)
+			app.chatTitle = thread.Title
+			app.chatHost = hostOf(thread.URL)
+			app.chatArticle = thread.Article
+			app.chatReady = true
+			if err := app.showWeb(app.chatURL(id, true)); err != nil {
+				app.chatErr = err.Error()
 			}
 		})
 	}()
+}
+
+// chatURL is the phone's conversation page; embedded drops its own header, as
+// the native bar above has the way back.
+func (app *App) chatURL(id string, embedded bool) string {
+	url := strings.TrimSuffix(app.localURL, "/") + "/t/" + id
+	if embedded {
+		url += "?embed=1"
+	}
+	return url
 }
