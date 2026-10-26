@@ -625,7 +625,15 @@ img { max-width: 100%; display: block; }
 .lookup__def { margin: 0; font-size: 13px; line-height: 1.55; }
 .lookup__hint, .lookup__error { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ink-3); }
 .lookup__error { color: var(--danger); }
-.lookup__actions { flex: none; align-self: center; display: flex; gap: 6px; }
+.lookup__actions {
+  flex: none;
+  align-self: center;
+  display: flex;
+  gap: 6px;
+  /* Both labels keep the same room, so saving does not re-wrap the meaning. */
+  min-width: 84px;
+  justify-content: flex-end;
+}
 .lookup__actions .is-placeholder { visibility: hidden; }
 .chip--small { padding: 4px 10px; font-size: 11.5px; }
 
@@ -1540,14 +1548,16 @@ body.chat-page .page {
       const saveButton = bar.querySelector('[data-save]');
       if (saveButton && entry) {
         saveButton.addEventListener('click', async () => {
+          // Mark it saved right away: the request can finish behind the panel,
+          // and nothing is redrawn while the button is under the finger.
+          state = { ...state, saved: true };
+          saveButton.textContent = '已加入';
           saveButton.disabled = true;
+          later();
           try {
             await api('/api/vocab', { method: 'POST', body: JSON.stringify(entry) });
-            state = { ...state, saved: true };
-            paint();
-            later();
           } catch (saveError) {
-            state = { ...state, error: saveError.message };
+            state = { ...state, saved: false, error: saveError.message };
             paint();
             later();
           }
