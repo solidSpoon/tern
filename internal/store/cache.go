@@ -68,8 +68,8 @@ func (s *Store) cacheDB() *sqlite.DB {
 	return db
 }
 
-// importDictJSON moves the old file's entries into the database and keeps the
-// file as dict.json.imported; a missing or empty file is fine.
+// importDictJSON moves the old file's entries into the database and deletes
+// it; a missing or empty file is fine.
 func importDictJSON(ctx context.Context, db *sqlite.DB, path string) {
 	if path == "" {
 		return
@@ -94,7 +94,7 @@ func importDictJSON(ctx context.Context, db *sqlite.DB, path string) {
 		log.Printf("lookup cache: importing dict.json: %v", err)
 		return
 	}
-	_ = os.Rename(path, path+".imported")
+	_ = os.Remove(path)
 	log.Printf("lookup cache: imported %d words from %s", len(old), path)
 }
 

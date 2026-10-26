@@ -136,7 +136,7 @@ speech, the Chinese meaning, the English definition, and the forms from the
 link a SQLite driver into the app. The AI's cached lookups live in
 `data/tern.db`, a writable SQLite file with the same word columns (plus example
 and timestamps), opened by the store; the old `dict.json` is imported once and
-left as `dict.json.imported`. `/api/lookup` answers from the store's AI
+deleted. `/api/lookup` answers from the store's AI
 cache first, then the offline file, then the agent. A miss (proper nouns,
 compounds, technical words) still goes to the agent, so lookup keeps working
 when the file is absent, and the file covers about 88% of the words in the
