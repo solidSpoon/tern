@@ -1504,12 +1504,28 @@ body.chat-page .page {
 
     // While the sheet is up a click anywhere means "put it away" — not "look up
     // this other word". Capturing at the document keeps the article's own click
-    // handler from seeing that click.
+    // handler from seeing that click. A scroll gesture closes it too.
     function onScreenClick(event) {
       if (event.target instanceof Element && event.target.closest('#lookup')) return;
       event.preventDefault();
       event.stopPropagation();
       close();
+    }
+
+    function onScreenScroll(event) {
+      if (event.target instanceof Element && event.target.closest('#lookup')) return;
+      close();
+    }
+
+    const watchOptions = { capture: true, passive: true };
+
+    function watch(on) {
+      const method = on ? 'addEventListener' : 'removeEventListener';
+      document[method]('click', onScreenClick, true);
+      document[method]('touchmove', onScreenScroll, watchOptions);
+      document[method]('wheel', onScreenScroll, watchOptions);
+      window[method]('scroll', onScreenScroll, watchOptions);
+      watching = on;
     }
 
     function close() {
@@ -1518,10 +1534,7 @@ body.chat-page .page {
         bar.classList.remove('is-open');
         bar.innerHTML = '';
       }
-      if (watching) {
-        document.removeEventListener('click', onScreenClick, true);
-        watching = false;
-      }
+      if (watching) watch(false);
       if (supportsHighlight) CSS.highlights.delete('word-hit');
       stopSpeaking();
     }
@@ -1553,10 +1566,7 @@ body.chat-page .page {
       if (!bar || !state) return;
       const { hit, entry, error, loading } = state;
       bar.classList.add('is-open');
-      if (!watching) {
-        document.addEventListener('click', onScreenClick, true);
-        watching = true;
-      }
+      if (!watching) watch(true);
       bar.innerHTML = `<div class="lookup__inner">
         <div class="lookup__text">
           <div class="lookup__head">
