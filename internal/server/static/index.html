@@ -579,32 +579,36 @@ img { max-width: 100%; display: block; }
 }
 
 /* ------------------------------------------------------------------ lookup */
-/* A word's meaning appears in one place: a small panel under the masthead,
-   over the article. It is hidden until a word is tapped and closes itself a
-   few seconds later, so the text never moves to make room for it. */
+/* A word's meaning drops from the top edge as a full-width sheet, over the
+   masthead, and closes itself a few seconds later. It is fixed, so the text
+   never moves to make room for it, and its height never changes. */
 .lookup {
   position: fixed;
-  top: calc(var(--masthead-h) + 10px);
+  top: 0;
   left: 0;
   right: 0;
+  z-index: 90;
+  height: calc(88px + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+  box-sizing: border-box;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
+  transform: translateY(-100%);
+  visibility: hidden;
+  transition: transform 0.16s ease, visibility 0.16s;
+}
+.lookup.is-open { transform: translateY(0); visibility: visible; }
+.lookup__inner {
+  max-width: 720px;
+  height: 100%;
   margin: 0 auto;
-  z-index: 80;
-  width: min(680px, calc(100vw - 32px));
-  height: 88px;
-  padding: 12px 14px;
+  padding: 12px 16px;
   box-sizing: border-box;
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  background: var(--paper);
-  border: 1px solid var(--rule);
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05), 0 18px 44px rgba(0, 0, 0, 0.16);
-  opacity: 0;
-  visibility: hidden;
 }
-html.embed .lookup { top: 18px; }
-.lookup.is-open { opacity: 1; visibility: visible; }
 .lookup__text {
   flex: 1;
   min-width: 0;
@@ -1518,7 +1522,8 @@ body.chat-page .page {
       if (!bar || !state) return;
       const { hit, entry, error, loading, saved } = state;
       bar.classList.add('is-open');
-      bar.innerHTML = `<div class="lookup__text">
+      bar.innerHTML = `<div class="lookup__inner">
+        <div class="lookup__text">
           <div class="lookup__head">
             <strong class="lookup__term">${esc(hit.term)}</strong>
             ${entry && entry.phonetic ? `<span class="lookup__phonetic">/${esc(entry.phonetic)}/</span>` : ''}
@@ -1532,7 +1537,8 @@ body.chat-page .page {
           ${entry
             ? `<button class="chip chip--small" data-save ${saved ? 'disabled' : ''}>${saved ? '已加入' : '＋ 生词本'}</button>`
             : '<button class="chip chip--small is-placeholder" disabled>＋ 生词本</button>'}
-        </div>`;
+        </div>
+      </div>`;
       const saveButton = bar.querySelector('[data-save]');
       if (saveButton && entry) {
         saveButton.addEventListener('click', async () => {
