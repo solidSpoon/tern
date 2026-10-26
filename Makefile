@@ -18,7 +18,7 @@ V ?=
 SIGN ?=
 SIGNFLAG := $(if $(filter-out -,$(SIGN)),-sign "$(SIGN)",)
 
-.PHONY: app icons release
+.PHONY: app icons dict release
 
 # MyGo takes the bundle's icon from resources/icon.png, and the development
 # build's from resources/icon-dev.png beside it; both come from the generator.
@@ -27,6 +27,18 @@ icons:
 	@mkdir -p resources
 	@cp assets/brand/png/icon-1024.png resources/icon.png
 	@cp assets/brand/png/icon-dev-1024.png resources/icon-dev.png
+
+# The offline dictionary: ECDICT's SQLite dump, cut down to the words a reader
+# meets (about 59k headwords and 56k forms, 12 MB). Its output is committed, so
+# this only needs running to refresh the data.
+ECDICT ?= .cache/ecdict/stardict.db
+
+dict:
+	@mkdir -p $(dir $(ECDICT))
+	@test -f "$(ECDICT)" || curl -fL --retry 3 -o .cache/ecdict-sqlite-28.zip \
+		https://github.com/skywind3000/ECDICT/releases/download/1.0.28/ecdict-sqlite-28.zip
+	@test -f "$(ECDICT)" || unzip -oq .cache/ecdict-sqlite-28.zip -d $(dir $(ECDICT))
+	go run ./tools/dict -source "$(ECDICT)" -out resources/dictionary.db
 
 # A local bundle to look at, without the disk image.
 app: icons

@@ -16,9 +16,11 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/solidSpoon/tern-go/internal/config"
+	"github.com/solidSpoon/tern-go/internal/dict"
 	"github.com/solidSpoon/tern-go/internal/model"
 	"github.com/solidSpoon/tern-go/internal/pi"
 	"github.com/solidSpoon/tern-go/internal/publish"
@@ -39,6 +41,27 @@ type Server struct {
 	Importer *publish.Importer
 	Port     int
 	Handler  http.Handler
+
+	dictPath string
+	dictOnce sync.Once
+	offline  *dict.Dictionary
+}
+
+// UseDictionary points the server at the offline dictionary. It is opened on
+// the first lookup, so a missing or broken file only costs the fallback to the
+// agent.
+func (s *Server) UseDictionary(path string) { s.dictPath = path }
+
+func (s *Server) dictionary() *dict.Dictionary {
+	s.dictOnce.Do(func() {
+		opened, err := dict.Open(s.dictPath)
+		if err != nil {
+			log.Printf("offline dictionary: %v", err)
+			return
+		}
+		s.offline = opened
+	})
+	return s.offline
 }
 
 // New wires the routes.
@@ -182,6 +205,22 @@ func (s *Server) lookup(w http.ResponseWriter, r *http.Request) {
 	}
 	if cached := s.Store.CachedEntry(term); cached != nil {
 		writeJSON(w, http.StatusOK, map[string]any{"entry": cached, "cached": true})
+		return
+	}
+	if found, ok, err := s.dictionary().Lookup(term); err != nil {
+		log.Printf("offline dictionary: %v", err)
+	} else if ok {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"entry": model.Vocab{
+				Term:     found.Term,
+				Phonetic: found.Phonetic,
+				Pos:      found.Pos,
+				ZH:       found.ZH,
+				EN:       found.EN,
+			},
+			"cached":  false,
+			"offline": true,
+		})
 		return
 	}
 	entry, err := s.Agent.LookupWord(term, body.Context)

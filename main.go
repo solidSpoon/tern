@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"syscall"
 	"time"
@@ -93,6 +94,9 @@ func main() {
 		log.Fatalf("cannot listen on %s:%d: %v", *host, port, err)
 	}
 	srv := server.New(library, settings, agent, runtime, mgr, importer, port)
+	if resources, err := mygo.App.Path(mygo.PathResources); err == nil {
+		srv.UseDictionary(filepath.Join(resources, "dictionary.db"))
+	}
 	httpServer := &http.Server{
 		Handler:           srv.Handler,
 		ReadHeaderTimeout: 15 * time.Second,

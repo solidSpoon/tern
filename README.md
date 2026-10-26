@@ -54,6 +54,7 @@ go run . --headless          # 只跑阅读服务，供手机 / 浏览器访问
 
 ```bash
 make app                  # 本机 .app（build/darwin-arm64/Tern.app），不出 DMG
+make dict                 # 重建离线词典 resources/dictionary.db（下载 ECDICT）
 make release V=0.1.1      # 写版本号 → 测试 → 打 DMG → 打 tag → 推 GitHub Release
 ```
 
@@ -149,6 +150,21 @@ internal/
 | POST | `/api/config/test` | 用当前配置跑一次最小请求 |
 | GET | `/media/*` | 本地图片（内容 hash 命名，长缓存） |
 | GET | `/`、`/a/{id}`、`/vocab` | 阅读页（同一张 HTML） |
+
+## 离线词典
+
+`resources/dictionary.db`（约 12 MB）是从 [ECDICT](https://github.com/skywind3000/ECDICT) 裁出来的
+SQLite 文件：5.9 万个常用词头（带词频或考试标签的）、5.6 万个词形（`sundials` → `sundial`）、
+音标、词性、中文释义和英文释义。阅读页点词先查它，本地几毫秒返回，不需要模型、运行时和网络；
+覆盖当前文章里约 88% 的单词。专有名词、复合词和更生僻的词仍交给 Agent。
+
+重建（会下载 ECDICT 的 SQLite 包到 `.cache/`，再裁成这个小库）：
+
+```bash
+make dict
+```
+
+词典是只读资源，随 `.app` 一起打包；缺了这个文件也只是回到「查不到就问 Agent」。
 
 ## AI 运行时
 

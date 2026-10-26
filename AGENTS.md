@@ -123,6 +123,22 @@ every build runs — do not hand-edit them.
 Check the reading page at 390 px (single column, no sideways scroll) and
 1000+ px (two columns), with and without `embed=1`.
 
+## Offline dictionary
+
+`resources/dictionary.db` is built from ECDICT by `tools/dict` and committed
+(about 59k common headwords and 56k inflected forms, 12 MB). `make dict`
+rebuilds it: it downloads ECDICT's SQLite dump into `.cache/` and keeps the
+frequency- or exam-tagged entries — one IPA-normalized phonetic, the part of
+speech, the Chinese meaning, the English definition, and the forms from the
+`exchange` column. Lookup keys are lowercased.
+
+`internal/dict` opens the file read-only through MyGo's SQLite plugin; never
+link a SQLite driver into the app. `/api/lookup` answers from the store's AI
+cache first, then the offline file, then the agent. A miss (proper nouns,
+compounds, technical words) still goes to the agent, so lookup keeps working
+when the file is absent, and the file covers about 88% of the words in the
+current library.
+
 ## Ingestion
 
 - One link = one conversation (`internal/threads`); Pi runs in RPC mode with a

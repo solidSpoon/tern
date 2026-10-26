@@ -402,8 +402,6 @@ img { max-width: 100%; display: block; }
   color: var(--ink-3);
 }
 
-.article__hint { margin: 13px 0 0; font-size: 11.5px; color: var(--ink-3); }
-
 .article__cover { margin: 28px 0 4px; }
 
 .article__cover img { width: 100%; border-radius: var(--radius); }
@@ -572,55 +570,61 @@ img { max-width: 100%; display: block; }
 
 .icon:disabled { opacity: 0.4; cursor: default; }
 
-/* ------------------------------------------------------------------ popover */
-.popover__scrim { position: fixed; inset: 0; z-index: 90; background: transparent; }
+/* The word whose meaning is (or was last) shown. Drawn by the browser's
+   highlight registry: nothing is inserted into the text, so the line keeps the
+   shaping it had and the paragraph cannot reflow. */
+::highlight(word-hit) {
+  background-color: var(--accent-soft);
+  color: inherit;
+}
 
-.popover {
+/* ------------------------------------------------------------------ lookup */
+/* A word's meaning appears in one place: a small panel under the masthead,
+   over the article. It is hidden until a word is tapped and closes itself a
+   few seconds later, so the text never moves to make room for it. */
+.lookup {
   position: fixed;
-  z-index: 91;
-  width: min(330px, calc(100vw - 24px));
-  /* Enough room for a lookup in progress, so it grows less when the entry
-     arrives. */
-  min-height: 120px;
-  padding: 14px 16px 12px;
+  top: calc(var(--masthead-h) + 10px);
+  left: 50%;
+  z-index: 80;
+  width: min(680px, calc(100vw - 32px));
+  min-height: 72px;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
   background: var(--paper);
   border: 1px solid var(--rule);
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06), 0 20px 48px rgba(0, 0, 0, 0.18);
-  animation: pop 0.16s ease both;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05), 0 18px 44px rgba(0, 0, 0, 0.16);
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, -6px);
+  transition: opacity 0.14s ease, transform 0.14s ease, visibility 0.14s;
 }
-
-.popover__head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
-
-.popover__term { font-family: var(--serif); font-size: 18px; font-weight: 600; }
-
-.popover__phonetic { font-size: 12px; color: var(--ink-3); }
-
-.popover__pos { font-size: 10.5px; letter-spacing: 0.08em; color: var(--accent); }
-
-.popover__def { margin: 10px 0 0; font-size: 14.5px; line-height: 1.7; }
-
-.popover__gloss { margin: 4px 0 0; font-size: 12.5px; font-style: italic; color: var(--ink-3); }
-
-.popover__hint, .popover__error { margin: 10px 0 0; font-size: 12.5px; color: var(--ink-3); }
-
-.popover__error { color: var(--danger); line-height: 1.6; }
-
-.popover__example {
-  margin-top: 11px;
-  padding: 9px 11px;
-  background: var(--paper-2);
-  border-radius: 4px;
-  font-size: 12.5px;
-  line-height: 1.65;
-  color: var(--ink-2);
+html.embed .lookup { top: 18px; }
+.lookup.is-open { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+.lookup__text {
+  flex: 1;
+  min-width: 0;
+  max-height: 68px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
-
-.popover__example p { margin: 0; }
-
-.popover__example-zh { margin-top: 4px !important; color: var(--ink-3); }
-
-.popover__actions { display: flex; gap: 8px; margin-top: 13px; }
+.lookup__text::-webkit-scrollbar { display: none; }
+.lookup__head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.lookup__term { font-family: var(--serif); font-size: 17px; font-weight: 600; }
+.lookup__phonetic { font-size: 11.5px; color: var(--ink-3); }
+.lookup__pos { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.lookup__def { margin: 0; font-size: 13px; line-height: 1.55; }
+.lookup__hint, .lookup__error { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ink-3); }
+.lookup__error { color: var(--danger); }
+.lookup__actions { flex: none; align-self: center; display: flex; gap: 6px; }
+.chip--small { padding: 4px 10px; font-size: 11.5px; }
 
 .chip {
   border: 1px solid transparent;
@@ -756,7 +760,6 @@ img { max-width: 100%; display: block; }
 /* The reading page inside the desktop window: the native toolbar above it
    owns the mode and the size, so the page keeps only the document. */
 html.embed .masthead { display: none; }
-html.embed .thread__head { display: none; }
 html.embed .chat { padding-top: 18px; }
 html.embed .progress { top: 0; }
 html.embed .page { padding: 0 26px 32px; }
@@ -803,6 +806,7 @@ html.embed .article__foot a { display: none; }
   /* The article page keeps the reader toolbar in the masthead: the nav links
      would not fit beside it on a phone. */
   .masthead--article .nav { display: none; }
+  .masthead--chat .nav { display: none; }
 
   .toolbar { gap: 6px; }
 
@@ -912,30 +916,18 @@ body.chat-page .page {
   display: flex;
   flex-direction: column;
 }
-.thread__head { flex: none; }
 .status-line { flex: none; }
-.thread__head {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 18px 0 12px;
-  border-bottom: 1px solid var(--rule);
-}
-.thread__back { flex: none; font-size: 12px; color: var(--ink-2); text-decoration: none; padding: 2px 0; }
-.thread__meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.thread__meta strong { font-size: 13px; }
-.thread__meta span { font-size: 11px; color: var(--ink-3); overflow-wrap: anywhere; }
-.thread__read {
-  flex: none;
+.thread > .status-line { margin: 14px 0 10px; }
+/* The page's own control in the masthead: the chat has no back link (the
+   browser's swipe does that) and nothing else to put up there. */
+.masthead__action {
   font-size: 12px;
-  padding: 5px 11px;
-  border: 1px solid var(--rule-strong);
-  border-radius: 999px;
-  color: var(--ink);
+  color: var(--ink-2);
   text-decoration: none;
+  padding: 2px 0;
   white-space: nowrap;
 }
-.thread__read[hidden] { display: none; }
+.masthead__action:hover { color: var(--ink); }
 
 .chat {
   list-style: none;
@@ -1011,11 +1003,6 @@ body.chat-page .page {
 .composer__text:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
 .composer .chip { flex: none; height: 42px; }
 
-@media (max-width: 520px) {
-  .thread__head { flex-wrap: wrap; }
-  .thread__meta { flex-basis: calc(100% - 80px); }
-  .thread__read { order: 3; }
-}
 </style>
 </head>
 <body>
@@ -1036,8 +1023,6 @@ body.chat-page .page {
 </header>
 
 <main class="page" id="page"></main>
-
-<div id="overlay"></div>
 
 <script>
 (() => {
@@ -1068,7 +1053,6 @@ body.chat-page .page {
   };
 
   const page = document.getElementById('page');
-  const overlay = document.getElementById('overlay');
   const right = document.getElementById('masthead-right');
 
   const esc = (value) =>
@@ -1252,10 +1236,6 @@ body.chat-page .page {
       host.dataset.size = reader.size;
       host.style.setProperty('--read-scale', SCALE[reader.size]);
     }
-    const hint = document.querySelector('.article__hint');
-    if (hint && article) {
-      hint.textContent = reader.mode === 'zh' ? '切到对照可点词查释义' : '点英文单词查释义';
-    }
     const smaller = document.querySelector('[data-size="smaller"]');
     const larger = document.querySelector('[data-size="larger"]');
     if (smaller) smaller.disabled = reader.size === SIZES[0];
@@ -1344,6 +1324,7 @@ body.chat-page .page {
     return `<div class="progress" aria-hidden="true"><span></span></div>
     <article class="article" data-mode="${reader.mode}" data-size="${reader.size}"
              style="--read-scale:${SCALE[reader.size]}">
+      <div class="lookup" id="lookup"></div>
       <header class="article__head">
         <div class="article__kicker">
           <a class="nav__link back-home" href="/">← 首页</a>
@@ -1358,7 +1339,6 @@ body.chat-page .page {
           <span>约 ${minutes} 分钟</span>
           <span>${words} 词</span>
         </p>
-        <p class="article__hint">${reader.mode === 'zh' ? '切到对照可点词查释义' : '点英文单词查释义'}</p>
       </header>
       ${article.cover ? `<figure class="article__cover"><img src="${esc(article.cover.src)}" alt="${esc(article.cover.alt || '')}" decoding="async" /></figure>` : ''}
       <div class="article__body">${article.blocks.map(blockHTML).join('')}</div>
@@ -1406,6 +1386,7 @@ body.chat-page .page {
       const offset = keepScroll ? window.scrollY : 0;
       page.innerHTML = articleHTML(article);
       syncToolbar(article);
+      lookup.mount(document.getElementById('lookup'));
       document.querySelector('.article__body').addEventListener('click', (event) => {
         const target = event.target;
         if (!(target instanceof Element)) return;
@@ -1466,9 +1447,20 @@ body.chat-page .page {
     if (!rect.width) return null;
 
     const paragraph = node.parentElement && node.parentElement.closest('[data-en-block]');
-    return { term: raw, context: paragraph ? paragraph.textContent.trim() : '', rect };
+    return {
+      term: raw,
+      context: paragraph ? paragraph.textContent.trim() : '',
+      rect,
+      node,
+      start,
+      end,
+    };
   }
 
+  // createLookup owns the panel over the article: the tap on a word, the
+  // entry, saving it. The panel is hidden until a word is asked about and
+  // closes itself a few seconds later; it floats over the text, so showing it
+  // never moves what the reader is reading.
   function createLookup(article) {
     const local = (term) => {
       const key = term.toLowerCase();
@@ -1479,99 +1471,136 @@ body.chat-page .page {
       );
     };
     const cache = new Map();
+    const hideAfter = 3000;
+    const supportsHighlight =
+      typeof Highlight === 'function' && typeof CSS !== 'undefined' && Boolean(CSS.highlights);
+    let bar = null;
+    let state = null;
+    let timer = 0;
+
+    function clearTimer() {
+      if (timer) clearTimeout(timer);
+      timer = 0;
+    }
 
     function close() {
-      overlay.innerHTML = '';
-      document.removeEventListener('keydown', onKey);
-    }
-    function onKey(event) {
-      if (event.key === 'Escape') close();
-    }
-
-    function place(box, rect) {
-      const width = box.offsetWidth || 320;
-      const height = box.offsetHeight || 170;
-      const left = Math.min(
-        Math.max(12, rect.left + rect.width / 2 - width / 2),
-        window.innerWidth - width - 12,
-      );
-      const above = rect.bottom + height + 16 > window.innerHeight;
-      const top = Math.max(12, above ? rect.top - height - 10 : rect.bottom + 10);
-      box.style.left = `${left}px`;
-      box.style.top = `${top}px`;
+      clearTimer();
+      state = null;
+      if (bar) {
+        bar.classList.remove('is-open');
+        bar.innerHTML = '';
+      }
     }
 
-    function draw(hit, entry, error, loading, saved) {
-      overlay.innerHTML = `<div class="popover__scrim"></div>
-        <div class="popover" role="dialog" aria-label="${esc(hit.term)} 的释义">
-          <div class="popover__head">
-            <strong class="popover__term">${esc(hit.term)}</strong>
-            ${entry && entry.phonetic ? `<span class="popover__phonetic">/${esc(entry.phonetic)}/</span>` : ''}
-            ${entry && entry.pos ? `<span class="popover__pos">${esc(entry.pos)}</span>` : ''}
+    function mark(hit) {
+      if (!supportsHighlight) return;
+      CSS.highlights.delete('word-hit');
+      if (!hit.node || !hit.node.isConnected) return;
+      const range = document.createRange();
+      range.setStart(hit.node, hit.start);
+      range.setEnd(hit.node, hit.end);
+      CSS.highlights.set('word-hit', new Highlight(range));
+    }
+
+    function later() {
+      clearTimer();
+      timer = setTimeout(close, hideAfter);
+    }
+
+    function paint() {
+      if (!bar || !state) return;
+      const { hit, entry, error, loading, saved } = state;
+      bar.classList.add('is-open');
+      bar.innerHTML = `<div class="lookup__text">
+          <div class="lookup__head">
+            <strong class="lookup__term">${esc(hit.term)}</strong>
+            ${entry && entry.phonetic ? `<span class="lookup__phonetic">/${esc(entry.phonetic)}/</span>` : ''}
+            ${entry && entry.pos ? `<span class="lookup__pos">${esc(entry.pos)}</span>` : ''}
           </div>
-          ${loading ? '<p class="popover__hint">正在生成释义…</p>' : ''}
-          ${error ? `<p class="popover__error">${esc(error)}</p>` : ''}
-          ${entry
-            ? `<p class="popover__def">${esc(entry.zh)}</p>
-               ${entry.en ? `<p class="popover__gloss">${esc(entry.en)}</p>` : ''}
-               ${entry.example
-                 ? `<div class="popover__example">
-                      <p>${esc(entry.example.en)}</p>
-                      <p class="popover__example-zh">${esc(entry.example.zh)}</p>
-                    </div>`
-                 : ''}
-               <div class="popover__actions">
-                 <button class="chip" data-save ${saved ? 'disabled' : ''}>${
-                   saved ? '已加入生词本' : '加入生词本'
-                 }</button>
-                 <button class="chip chip--ghost" data-close>关闭</button>
-               </div>`
-            : ''}
+          ${loading ? '<p class="lookup__hint">正在生成释义…</p>' : ''}
+          ${error ? `<p class="lookup__error">${esc(error)}</p>` : ''}
+          ${entry ? `<p class="lookup__def">${esc(entry.zh)}</p>` : ''}
+        </div>
+        <div class="lookup__actions">
+          ${entry ? `<button class="chip chip--small" data-save ${saved ? 'disabled' : ''}>${saved ? '已加入' : '＋ 生词本'}</button>` : ''}
+          <button class="chip chip--ghost chip--small" data-close aria-label="关闭">×</button>
         </div>`;
-
-      const box = overlay.querySelector('.popover');
-      place(box, hit.rect);
-      overlay.querySelector('.popover__scrim').addEventListener('click', close);
-      const closeButton = overlay.querySelector('[data-close]');
-      if (closeButton) closeButton.addEventListener('click', close);
-      const saveButton = overlay.querySelector('[data-save]');
+      bar.querySelector('[data-close]').addEventListener('click', close);
+      const saveButton = bar.querySelector('[data-save]');
       if (saveButton && entry) {
         saveButton.addEventListener('click', async () => {
           saveButton.disabled = true;
           try {
             await api('/api/vocab', { method: 'POST', body: JSON.stringify(entry) });
-            saved = true;
-            draw(hit, entry, null, false, true);
+            state = { ...state, saved: true };
+            paint();
+            later();
           } catch (saveError) {
-            saveButton.disabled = false;
-            draw(hit, entry, saveError.message, false, false);
+            state = { ...state, error: saveError.message };
+            paint();
+            later();
           }
         });
       }
-      document.addEventListener('keydown', onKey);
     }
 
     async function show(hit) {
+      mark(hit);
       const known = local(hit.term) || cache.get(hit.term.toLowerCase());
       if (known) {
-        cache.set(hit.term.toLowerCase(), known);
-        draw(hit, known, null, false, false);
+        state = { hit, entry: known, error: '', loading: false, saved: false };
+        paint();
+        later();
         return;
       }
-      draw(hit, null, null, true, false);
+      state = { hit, entry: null, error: '', loading: true, saved: false };
+      paint();
+      clearTimer();
       try {
         const result = await api('/api/lookup', {
           method: 'POST',
           body: JSON.stringify({ term: hit.term, context: hit.context }),
         });
         cache.set(hit.term.toLowerCase(), result.entry);
-        draw(hit, result.entry, null, false, false);
+        if (state && state.hit.term === hit.term) {
+          state = { hit, entry: result.entry, error: '', loading: false, saved: false };
+          paint();
+          later();
+        }
       } catch (error) {
-        draw(hit, null, error.message, false, false);
+        if (state && state.hit.term === hit.term) {
+          state = { hit, entry: null, error: error.message, loading: false, saved: false };
+          paint();
+          later();
+        }
       }
     }
 
-    return { show };
+    function mount(node) {
+      bar = node;
+      if (supportsHighlight) CSS.highlights.delete('word-hit');
+      // Reading it or tapping 生词本 takes a moment: do not close under the
+      // finger while the pointer or the focus is on the panel.
+      bar.addEventListener('pointerenter', clearTimer);
+      bar.addEventListener('pointerleave', () => {
+        if (state) later();
+      });
+      bar.addEventListener('pointerdown', clearTimer);
+      bar.addEventListener('focusin', clearTimer);
+      bar.addEventListener('focusout', () => {
+        if (state) later();
+      });
+      if (state) {
+        paint();
+        later();
+      }
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') close();
+    });
+
+    return { show, mount };
   }
 
   // ------------------------------------------------------------------ vocab
@@ -1813,12 +1842,12 @@ body.chat-page .page {
     document.title = '对话 · Tern';
     setNav('threads');
     stopChat();
+    document.getElementById('masthead').classList.add('masthead--chat');
+    right.insertAdjacentHTML(
+      'afterbegin',
+      '<a class="masthead__action" id="thread-read" href="#" hidden>阅读全文 →</a>',
+    );
     page.innerHTML = `<section class="thread">
-      <div class="thread__head">
-        <a class="thread__back" href="/threads">← 对话</a>
-        <div class="thread__meta" id="thread-meta"></div>
-        <a class="thread__read" id="thread-read" href="#" hidden>阅读全文 →</a>
-      </div>
       <p class="status-line" id="thread-status">读取中…</p>
       <ol class="chat" id="chat"></ol>
       <form class="composer" id="composer">
@@ -1828,7 +1857,6 @@ body.chat-page .page {
     </section>`;
 
     const status = document.getElementById('thread-status');
-    const meta = document.getElementById('thread-meta');
     const read = document.getElementById('thread-read');
     const chat = document.getElementById('chat');
     const form = document.getElementById('composer');
@@ -1839,11 +1867,8 @@ body.chat-page .page {
     let lastPaint = '';
 
     const paint = (thread, running) => {
-      meta.innerHTML = `<strong>${esc(threadHost(thread.url))}</strong><span>${esc(thread.url)}</span>`;
-      if (thread.articleId) {
-        read.hidden = false;
-        read.href = `/a/${encodeURIComponent(thread.articleId)}`;
-      }
+      read.hidden = !thread.articleId;
+      if (thread.articleId) read.href = `/a/${encodeURIComponent(thread.articleId)}`;
       const atBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 90;
       chat.innerHTML = chatMarkup(thread.events);
       if (first || atBottom) {

@@ -15,4 +15,7 @@ dist/
 # MyGo development bundles
 /.mygo/
 
+# Downloads kept for rebuilding assets (ECDICT)
+/.cache/
+
 .DS_Store
