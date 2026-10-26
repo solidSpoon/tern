@@ -1539,17 +1539,20 @@ body.chat-page .page {
       stopSpeaking();
     }
 
+    let audio = null;
+
     function speak(term) {
-      if (!('speechSynthesis' in window)) return;
-      speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(term);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.9;
-      speechSynthesis.speak(utterance);
+      stopSpeaking();
+      audio = new Audio('/api/say?term=' + encodeURIComponent(term));
+      audio.preload = 'auto';
+      audio.play().catch(() => {});
     }
 
     function stopSpeaking() {
-      if ('speechSynthesis' in window) speechSynthesis.cancel();
+      if (!audio) return;
+      audio.pause();
+      audio.currentTime = 0;
+      audio = null;
     }
 
     function mark(hit) {
@@ -1591,6 +1594,9 @@ body.chat-page .page {
 
     async function show(hit) {
       mark(hit);
+      // The Mac synthesizes the word; asking now makes the speaker button play
+      // at once instead of waiting for it.
+      fetch('/api/say?term=' + encodeURIComponent(hit.term)).catch(() => {});
       const known = local(hit.term) || cache.get(hit.term.toLowerCase());
       if (known) {
         state = { hit, entry: known, error: '', loading: false };

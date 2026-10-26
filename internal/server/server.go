@@ -79,6 +79,7 @@ func New(st *store.Store, settings *config.Settings, agent *pi.Agent, runtime *p
 	mux.HandleFunc("GET /api/articles", s.listArticles)
 	mux.HandleFunc("GET /api/articles/{id}", s.getArticle)
 	mux.HandleFunc("POST /api/lookup", s.lookup)
+	mux.HandleFunc("GET /api/say", s.say)
 	mux.HandleFunc("GET /api/config", s.getConfig)
 	mux.HandleFunc("POST /api/config", s.saveConfig)
 	mux.HandleFunc("POST /api/config/test", s.testConfig)
