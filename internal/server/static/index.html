@@ -665,6 +665,25 @@ img { max-width: 100%; display: block; }
 .lookup__def { margin: 0; font-size: 13px; line-height: 1.55; }
 .lookup__hint, .lookup__error { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ink-3); }
 .lookup__error { color: var(--danger); }
+
+.lookup__say {
+  flex: none;
+  align-self: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper-2);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.lookup__say:active { background: var(--paper-3); }
 .chip {
   border: 1px solid transparent;
   background: var(--ink);
@@ -1477,64 +1496,87 @@ body.chat-page .page {
       );
     };
     const cache = new Map();
-    const hideAfter = 3000;
-    const markAfter = 5000;
     const supportsHighlight =
       typeof Highlight === 'function' && typeof CSS !== 'undefined' && Boolean(CSS.highlights);
     let bar = null;
     let state = null;
-    let timer = 0;
-    let markTimer = 0;
+    let watching = false;
 
-    function clearTimer() {
-      if (timer) clearTimeout(timer);
-      timer = 0;
+    // While the sheet is up a click anywhere means "put it away" — not "look up
+    // this other word". Capturing at the document keeps the article's own click
+    // handler from seeing that click.
+    function onScreenClick(event) {
+      if (event.target instanceof Element && event.target.closest('#lookup')) return;
+      event.preventDefault();
+      event.stopPropagation();
+      close();
     }
 
     function close() {
-      clearTimer();
       state = null;
       if (bar) {
         bar.classList.remove('is-open');
         bar.innerHTML = '';
       }
+      if (watching) {
+        document.removeEventListener('click', onScreenClick, true);
+        watching = false;
+      }
+      if (supportsHighlight) CSS.highlights.delete('word-hit');
+      stopSpeaking();
+    }
+
+    function speak(term) {
+      if (!('speechSynthesis' in window)) return;
+      speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(term);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.9;
+      speechSynthesis.speak(utterance);
+    }
+
+    function stopSpeaking() {
+      if ('speechSynthesis' in window) speechSynthesis.cancel();
     }
 
     function mark(hit) {
       if (!supportsHighlight) return;
-      if (markTimer) clearTimeout(markTimer);
       CSS.highlights.delete('word-hit');
       if (!hit.node || !hit.node.isConnected) return;
       const range = document.createRange();
       range.setStart(hit.node, hit.start);
       range.setEnd(hit.node, hit.end);
       CSS.highlights.set('word-hit', new Highlight(range));
-      // The wash outlives the panel by two seconds: the reader can look back
-      // and see which word the meaning came from.
-      markTimer = setTimeout(() => CSS.highlights.delete('word-hit'), markAfter);
-    }
-
-    function later() {
-      clearTimer();
-      timer = setTimeout(close, hideAfter);
     }
 
     function paint() {
       if (!bar || !state) return;
       const { hit, entry, error, loading } = state;
       bar.classList.add('is-open');
+      if (!watching) {
+        document.addEventListener('click', onScreenClick, true);
+        watching = true;
+      }
       bar.innerHTML = `<div class="lookup__inner">
         <div class="lookup__text">
           <div class="lookup__head">
             <strong class="lookup__term">${esc(hit.term)}</strong>
-            ${entry && entry.phonetic ? `<span class="lookup__phonetic">/${esc(entry.phonetic)}/</span>` : ''}
+            ${entry && entry.phonetic ? `<span class="lookup__phonetic">/${esc(entry.phonetic.replace(/^\/+|\/+$/g, ''))}/</span>` : ''}
             ${entry && entry.pos ? `<span class="lookup__pos">${esc(entry.pos)}</span>` : ''}
           </div>
           ${loading ? '<p class="lookup__hint">正在生成释义…</p>' : ''}
           ${error ? `<p class="lookup__error">${esc(error)}</p>` : ''}
           ${entry ? `<p class="lookup__def">${esc(entry.zh)}</p>` : ''}
         </div>
+        <button class="lookup__say" data-say type="button" aria-label="播放发音">🔊</button>
       </div>`;
+      const sayButton = bar.querySelector('[data-say]');
+      if (sayButton) {
+        sayButton.addEventListener('click', (event) => {
+          event.stopPropagation();
+          speak(hit.term);
+        });
+      }
     }
 
     async function show(hit) {
@@ -1543,12 +1585,10 @@ body.chat-page .page {
       if (known) {
         state = { hit, entry: known, error: '', loading: false };
         paint();
-        later();
         return;
       }
       state = { hit, entry: null, error: '', loading: true };
       paint();
-      clearTimer();
       try {
         const result = await api('/api/lookup', {
           method: 'POST',
@@ -1558,38 +1598,19 @@ body.chat-page .page {
         if (state && state.hit.term === hit.term) {
           state = { hit, entry: result.entry, error: '', loading: false };
           paint();
-          later();
         }
       } catch (error) {
         if (state && state.hit.term === hit.term) {
           state = { hit, entry: null, error: error.message, loading: false };
           paint();
-          later();
         }
       }
     }
 
     function mount(node) {
       bar = node;
-      if (supportsHighlight) {
-        if (markTimer) clearTimeout(markTimer);
-        CSS.highlights.delete('word-hit');
-      }
-      // Reading it or tapping 生词本 takes a moment: do not close under the
-      // finger while the pointer or the focus is on the panel.
-      bar.addEventListener('pointerenter', clearTimer);
-      bar.addEventListener('pointerleave', () => {
-        if (state) later();
-      });
-      bar.addEventListener('pointerdown', clearTimer);
-      bar.addEventListener('focusin', clearTimer);
-      bar.addEventListener('focusout', () => {
-        if (state) later();
-      });
-      if (state) {
-        paint();
-        later();
-      }
+      if (supportsHighlight) CSS.highlights.delete('word-hit');
+      if (state) paint();
     }
 
     document.addEventListener('keydown', (event) => {
