@@ -1644,6 +1644,13 @@ body.chat-page .page {
     return { show, mount };
   }
 
+  // One polling timer, shared by the phone's conversation pages.
+  let chatTimer = 0;
+  const stopChat = () => {
+    if (chatTimer) clearTimeout(chatTimer);
+    chatTimer = 0;
+  };
+
   function threadHost(url) {
     try {
       return new URL(url).hostname.replace(/^www\./, '');
