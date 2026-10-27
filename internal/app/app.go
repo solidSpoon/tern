@@ -4,6 +4,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -477,6 +478,11 @@ func (app *App) loadSettings() {
 				app.modelChoice = agentStatus.Model
 			}
 		})
+		// The provider's own list, a moment later: the page shows the fallback
+		// choices first and swaps them in place.
+		if models, err := app.agent.FetchModels(context.Background()); err == nil && len(models) > 0 {
+			app.refresh(func() { app.models = models })
+		}
 	}()
 }
 

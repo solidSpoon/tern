@@ -1,8 +1,10 @@
 package pi
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -95,6 +97,62 @@ func (a *Agent) Status() AgentStatus {
 
 // Models lists the models Settings offers.
 func (a *Agent) Models() []string { return a.Settings.ModelChoices() }
+
+// FetchModels asks the provider which models the saved key can use. The list is
+// the provider's own OpenAI-compatible /models endpoint, newest first in its
+// order; the configured model is kept even if the provider left it out.
+func (a *Agent) FetchModels(ctx context.Context) ([]string, error) {
+	cfg := a.Settings.Get()
+	key := strings.TrimSpace(cfg.Agent.APIKey)
+	if cfg.Agent.Provider == "demo" || key == "" {
+		return nil, fmt.Errorf("no key")
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, config.ModelsURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Authorization", "Bearer "+key)
+	client := &http.Client{Timeout: 10 * time.Second}
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("models: %s", response.Status)
+	}
+	var body struct {
+		Data []struct {
+			ID string `json:"id"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
+		return nil, err
+	}
+	models := make([]string, 0, len(body.Data)+1)
+	for _, item := range body.Data {
+		if item.ID != "" {
+			models = append(models, item.ID)
+		}
+	}
+	if len(models) == 0 {
+		return nil, fmt.Errorf("models: empty list")
+	}
+	current := cfg.Agent.Model
+	if current != "" && !contains(models, current) {
+		models = append([]string{current}, models...)
+	}
+	return models, nil
+}
+
+func contains(list []string, value string) bool {
+	for _, item := range list {
+		if item == value {
+			return true
+		}
+	}
+	return false
+}
 
 func (a *Agent) ready() (apiKey, modelID string, err error) {
 	cfg := a.Settings.Get()

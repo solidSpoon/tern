@@ -14,12 +14,15 @@ import (
 	"sync"
 )
 
-// Model choices offered in Settings. Changing provider means changing these
-// and the provider below.
+// The provider and its model list. Changing provider means changing the
+// endpoint and the fallback choices here.
 const (
-	Provider    = "deepseek"
-	DefaultMdl  = "deepseek-v4-pro"
-	ModelChoice = "deepseek-flash"
+	Provider   = "deepseek"
+	DefaultMdl = "deepseek-flash"
+	// ModelsURL is the provider's OpenAI-compatible model list.
+	ModelsURL = "https://api.deepseek.com/models"
+	// ModelChoice is the second fallback, for when the list cannot be fetched.
+	ModelChoice = "deepseek-v4-pro"
 )
 
 // Agent is the model configuration. The key never leaves the machine: it is
@@ -340,8 +343,9 @@ func (s *Settings) ClearAPIKey() error {
 	return s.Save(next)
 }
 
-// ModelChoices lists the models Settings offers, with the configured one first
-// when it is not one of them.
+// ModelChoices is the fallback list Settings offers when the provider's model
+// list cannot be fetched, with the configured one first when it is not one of
+// them.
 func (s *Settings) ModelChoices() []string {
 	current := s.Get().Agent.Model
 	out := []string{DefaultMdl, ModelChoice}
