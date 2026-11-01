@@ -23,7 +23,10 @@ before changing the app or the reading page.
   `static/` folder: `/favicon.ico`, `/apple-touch-icon.png` (the one iOS puts on a
   home screen — an SVG `data:` link alone gives the shortcut a page screenshot),
   `/icon-192.png`, `/icon-512.png` and `/site.webmanifest`. They are copies of
-  `assets/brand/web`, refreshed by `make icons`.
+  `assets/brand/web`, refreshed by `make icons`. Every URL carries `?v=<hash of
+  the icons>`, filled in when the page and manifest are served: iOS pins a home
+  screen shortcut's icon to the URL it was added with, so a redrawn icon must
+  have a new URL or the old picture stays.
 - Data lives in `data/` and `media/` under a **user-chosen root**: by default
   `~/Library/Application Support/Tern`, changed in Settings → 数据目录 (the
   pointer is `~/Library/Application Support/Tern/root.txt`, `TERN_HOME`

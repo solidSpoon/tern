@@ -61,9 +61,12 @@ bundle 外（`mygo.App.IsPackaged()` 为假），就把 `png/icon-dev-512.png` �
 `/icon-192.png`、`/icon-512.png`、`/site.webmanifest`。页面 `<head>` 里的：
 
 ```html
-<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
-<link rel="manifest" href="/site.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v={{icons}}" sizes="180x180">
+<link rel="manifest" href="/site.webmanifest?v={{icons}}">
 ```
+
+`{{icons}}` 由 `internal/server` 在发页和发 manifest 时换成四个图标内容的短哈希：
+重画图标就是换新 URL，iOS 主屏幕快捷方式不会继续抱着旧图。
 
 iOS 不会把 SVG favicon 当作主屏幕图标，没有 `apple-touch-icon` 时快捷方式就退化成
 页面截图；Android / Chrome 则读 manifest 里的 192 和 512。

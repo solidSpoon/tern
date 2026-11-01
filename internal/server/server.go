@@ -4,10 +4,14 @@
 package server
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"io/fs"
 	"log"
@@ -478,13 +482,53 @@ func (s *Server) serveIcon(icon webIcon) http.HandlerFunc {
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
-		// Not immutable: a redrawn icon should reach a browser that asks again.
 		w.Header().Set("Content-Type", icon.ctype)
-		w.Header().Set("Cache-Control", "public, max-age=3600")
+		// The images are named by their content (see iconTag), so a cached one
+		// is never stale; the manifest is not, so it is only held briefly.
+		if strings.HasSuffix(icon.file, ".webmanifest") {
+			w.Header().Set("Cache-Control", "public, max-age=3600")
+		} else {
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		}
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(raw)
+		_, _ = w.Write(withIconTag(raw))
 	}
 }
+
+// iconTag is a short hash of the icons: it names them in the page, so a redrawn
+// icon has a new URL and no cache — the browser's or, worse, the one behind an
+// iOS home screen shortcut — can hand back the old picture. It changes only
+// when the icons do.
+var iconTag = sync.OnceValue(func() string {
+	var h hash.Hash
+	for _, icon := range webIcons {
+		if icon.file == "static/site.webmanifest" {
+			continue
+		}
+		raw, err := fs.ReadFile(webFS, icon.file)
+		if err != nil {
+			continue
+		}
+		if h == nil {
+			h = sha256.New()
+		}
+		_, _ = h.Write(raw)
+	}
+	if h == nil {
+		return "0"
+	}
+	return hex.EncodeToString(h.Sum(nil)[:4])
+})
+
+// withIconTag fills the {{icons}} placeholder that names the icon URLs.
+func withIconTag(raw []byte) []byte {
+	if !bytes.Contains(raw, iconTagPlaceholder) {
+		return raw
+	}
+	return bytes.ReplaceAll(raw, iconTagPlaceholder, []byte(iconTag()))
+}
+
+var iconTagPlaceholder = []byte("{{icons}}")
 
 var mediaTypes = map[string]string{
 	".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
@@ -536,7 +580,7 @@ func (s *Server) serveApp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(raw)
+	_, _ = w.Write(withIconTag(raw))
 }
 
 func serveFile(w http.ResponseWriter, r *http.Request, file string, _ fs.FileInfo) {
