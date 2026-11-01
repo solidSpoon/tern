@@ -1029,9 +1029,11 @@ body.chat-page .page {
   align-items: flex-end;
   gap: 8px;
   padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
-  background: color-mix(in oklab, var(--paper) 92%, transparent);
-  backdrop-filter: saturate(180%) blur(12px);
-  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  /* Plain paper, no backdrop blur. Nothing scrolls behind the composer, so the
+     blur showed nothing — and on iOS a backdrop-filter makes WebKit rasterise
+     the content around it into a coarser layer, which left the whole
+     conversation's text soft in a home screen web app. */
+  background: var(--paper);
   border-top: 1px solid var(--rule);
 }
 .composer__text {

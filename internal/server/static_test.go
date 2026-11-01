@@ -106,3 +106,13 @@ func readPage(t *testing.T) []byte {
 	}
 	return withIconTag(raw)
 }
+
+// A backdrop-filter anywhere on the page makes WebKit rasterise what is around
+// it into a coarser layer: in a home screen web app the whole conversation went
+// soft, while the same page in Safari was crisp. Nothing needs one, so the page
+// keeps none.
+func TestReadingPageHasNoBackdropFilter(t *testing.T) {
+	if bytes.Contains(bytes.ToLower(readPage(t)), []byte("backdrop-filter:")) {
+		t.Error("the reading page uses backdrop-filter again; iOS renders the surrounding text soft")
+	}
+}

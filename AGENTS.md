@@ -79,6 +79,10 @@ Do this instead:
   header. Dragging any of them moves the window and a double click zooms or
   minimizes as the system says; controls inside still take their presses (the
   innermost element is pressed). Do not add a second title bar.
+- The web page uses no `backdrop-filter`: on iOS a blurred surface makes WebKit
+  rasterise the content around it into a coarser layer, which left the whole
+  conversation soft on a home screen web app (Safari itself was crisp). The
+  masthead was the first offender, the composer the second; a test forbids it.
 - Prefer `ui.Invisible`/`Opacity(0)` to conditional children for anything that
   occupies layout; reserve `if` for data that is genuinely absent (an empty
   list, a missing article).
