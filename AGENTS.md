@@ -19,6 +19,11 @@ before changing the app or the reading page.
     bar with the way back and the article link;
   - phone: `/threads`, `/t/<id>` and `/a/<id>` without `embed`, each with its own
     header and controls.
+- The page names its own icons at fixed paths, served from the same embedded
+  `static/` folder: `/favicon.ico`, `/apple-touch-icon.png` (the one iOS puts on a
+  home screen — an SVG `data:` link alone gives the shortcut a page screenshot),
+  `/icon-192.png`, `/icon-512.png` and `/site.webmanifest`. They are copies of
+  `assets/brand/web`, refreshed by `make icons`.
 - Data lives in `data/` and `media/` under a **user-chosen root**: by default
   `~/Library/Application Support/Tern`, changed in Settings → 数据目录 (the
   pointer is `~/Library/Application Support/Tern/root.txt`, `TERN_HOME`

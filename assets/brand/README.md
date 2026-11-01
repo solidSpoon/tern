@@ -53,12 +53,19 @@ bundle 外（`mygo.App.IsPackaged()` 为假），就把 `png/icon-dev-512.png` �
 
 打包时不用手动塞 `.icns`：`make app` / `make release` 会把 `png/icon-1024.png` 复制成
 `resources/icon.png`（开发包用 `icon-dev.png`），MyGo 自己转成 bundle 里的
-`AppIcon.icns`；`macos/*.icns` 留给别的打包方式用。网页端在 `internal/server/static/index.html`
-的 `<head>` 里加：
+`AppIcon.icns`；`macos/*.icns` 留给别的打包方式用。
+
+网页端（阅读页、手机上的首页快捷方式）用的是 `web/` 里的四个文件，它们由
+`make icons` 复制到 `internal/server/static/`，跟 `index.html` 一起嵌进二进制，
+由 `internal/server` 在固定路径上提供：`/favicon.ico`、`/apple-touch-icon.png`、
+`/icon-192.png`、`/icon-512.png`、`/site.webmanifest`。页面 `<head>` 里的：
 
 ```html
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+<link rel="manifest" href="/site.webmanifest">
 ```
+
+iOS 不会把 SVG favicon 当作主屏幕图标，没有 `apple-touch-icon` 时快捷方式就退化成
+页面截图；Android / Chrome 则读 manifest 里的 192 和 512。
 
 `design/ref.jpg` 是最早的参考稿，现在只作资料留存，生成器不再读它。

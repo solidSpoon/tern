@@ -28,7 +28,7 @@ import (
 	"github.com/solidSpoon/tern-go/internal/threads"
 )
 
-//go:embed static/index.html
+//go:embed static
 var webFS embed.FS
 
 // Server is the HTTP face of Tern.
@@ -93,6 +93,10 @@ func New(st *store.Store, settings *config.Settings, agent *pi.Agent, runtime *p
 	mux.HandleFunc("POST /api/threads/{id}/messages", s.postMessage)
 	mux.HandleFunc("POST /api/threads/{id}/publish", s.publishArticle)
 	mux.HandleFunc("POST /api/threads/{id}/images", s.uploadImage)
+
+	for _, file := range webIcons {
+		mux.HandleFunc("GET "+file.path, s.serveIcon(file))
+	}
 
 	mux.HandleFunc("GET /media/{name...}", s.serveMedia)
 	mux.HandleFunc("/", s.serveApp)
@@ -442,6 +446,45 @@ func (s *Server) uploadImage(w http.ResponseWriter, r *http.Request) {
 }
 
 // ---------------------------------------------------------------- static
+
+// webIcon is one file a browser asks for by path.
+type webIcon struct {
+	path  string
+	file  string
+	ctype string
+}
+
+// webIcons are the page's own files that a browser asks for by path instead of
+// the page loading them: the tab icon, the home screen icon iOS wants, and the
+// manifest. They are drawn from assets/brand by `make icons`, which copies
+// them into static/ so the binary carries them.
+//
+// The page once offered only an SVG data: favicon, which iOS does not use for
+// "add to home screen": the shortcut fell back to a screenshot of the page.
+var webIcons = []webIcon{
+	{"/favicon.ico", "static/favicon.ico", "image/x-icon"},
+	{"/apple-touch-icon.png", "static/apple-touch-icon.png", "image/png"},
+	// iOS asks for this name on its own when the page has no icon link.
+	{"/apple-touch-icon-precomposed.png", "static/apple-touch-icon.png", "image/png"},
+	{"/icon-192.png", "static/icon-192.png", "image/png"},
+	{"/icon-512.png", "static/icon-512.png", "image/png"},
+	{"/site.webmanifest", "static/site.webmanifest", "application/manifest+json; charset=utf-8"},
+}
+
+func (s *Server) serveIcon(icon webIcon) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		raw, err := fs.ReadFile(webFS, icon.file)
+		if err != nil {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		// Not immutable: a redrawn icon should reach a browser that asks again.
+		w.Header().Set("Content-Type", icon.ctype)
+		w.Header().Set("Cache-Control", "public, max-age=3600")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(raw)
+	}
+}
 
 var mediaTypes = map[string]string{
 	".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",

@@ -5,10 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1" />
 <meta name="color-scheme" content="light dark" />
 <meta name="theme-color" content="#fbfbfb" />
+<meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-title" content="Tern" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="format-detection" content="telephone=no" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2317505C'/%3E%3Ccircle cx='28' cy='38' r='20' fill='%23F8F0DD'/%3E%3Cpath d='M8 38a20 20 0 0 1 40 0Z' fill='%2308222A'/%3E%3Ccircle cx='35' cy='42' r='3' fill='%2308222A'/%3E%3Cpath d='M46 39l12 3-12 4Z' fill='%23E8873C'/%3E%3C/svg%3E" />
+<!-- The tab icon stays an inline SVG: crisp at any size and no request. iOS
+     ignores it for a home screen icon, so the shortcut takes the PNG named by
+     apple-touch-icon; the server serves these files from static/. -->
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2317505C'/%3E%3Ccircle cx='28' cy='38' r='20' fill='%23F8F0DD'/%3E%3Cpath d='M8 38a20 20 0 0 1 40 0Z' fill='%2308222A'/%3E%3Ccircle cx='35' cy='42' r='3' fill='%2308222A'/%3E%3Cpath d='M46 39l12 3-12 4Z' fill='%23E8873C'/%3E%3C/svg%3E" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+<link rel="manifest" href="/site.webmanifest" />
 <title>Tern · 双语阅读</title>
 <script>
   // The desktop embeds this page in a native window (ui.WebView). In that

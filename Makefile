@@ -22,11 +22,16 @@ SIGNFLAG := $(if $(filter-out -,$(SIGN)),-sign "$(SIGN)",)
 
 # MyGo takes the bundle's icon from resources/icon.png, and the development
 # build's from resources/icon-dev.png beside it; both come from the generator.
+# The reading page's icons are copied into the server's embedded static/ too,
+# so a redrawn icon reaches the phone as well as the Dock.
 icons:
 	go run ./tools/icon
 	@mkdir -p resources
 	@cp assets/brand/png/icon-1024.png resources/icon.png
 	@cp assets/brand/png/icon-dev-1024.png resources/icon-dev.png
+	@cp assets/brand/web/favicon.ico assets/brand/web/apple-touch-icon.png \
+		assets/brand/web/icon-192.png assets/brand/web/icon-512.png \
+		internal/server/static/
 
 # The offline dictionary: ECDICT's SQLite dump, cut down to the words a reader
 # meets (about 59k headwords and 56k forms, 12 MB). Its output is committed, so

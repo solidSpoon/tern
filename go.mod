@@ -1,6 +1,6 @@
 module github.com/solidSpoon/tern-go
 
-go 1.27.1
+go 1.27.3
 
 require github.com/egoist/mygo v0.0.0
 
