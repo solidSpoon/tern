@@ -948,7 +948,21 @@ body.chat-page {
   height: var(--visible-h, 100dvh);
   overflow: hidden;
 }
-body.chat-page .masthead { flex: none; position: static; }
+/* The header stays sticky, exactly as on every other page: as a static flex
+   item iOS drew it in the page's own surface, which a home screen web app
+   rasterises at 1x and scales up — its text and its hairline came out soft
+   beside the crisp log, while the sticky headers of the other pages were fine.
+   The body does not scroll here, so it simply stays at the top. */
+body.chat-page .masthead { flex: none; }
+/* In a home screen web app this page's surface was rasterised at 1x and scaled
+   up, so the header and the composer came out soft while the log — which has a
+   scrolling layer of its own — stayed crisp. Giving the two of them their own
+   layers puts them back on the device's scale. */
+body.chat-page .masthead,
+body.chat-page .composer {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
 body.chat-page .page {
   flex: 1 1 auto;
   min-height: 0;
