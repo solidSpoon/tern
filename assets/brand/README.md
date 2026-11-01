@@ -58,7 +58,10 @@ bundle 外（`mygo.App.IsPackaged()` 为假），就把 `png/icon-dev-512.png` �
 网页端（阅读页、手机上的首页快捷方式）用的是 `web/` 里的四个文件，它们由
 `make icons` 复制到 `internal/server/static/`，跟 `index.html` 一起嵌进二进制，
 由 `internal/server` 在固定路径上提供：`/favicon.ico`、`/apple-touch-icon.png`、
-`/icon-192.png`、`/icon-512.png`、`/site.webmanifest`。页面 `<head>` 里的：
+`/icon-192.png`、`/icon-512.png`、`/site.webmanifest`。
+
+这三张 PNG **满幅**（`renderBleed`）：圆角由 iOS / Android 自己裁，透明边留着会被
+系统涂成黑色。`.ico` 和 Dock 用的 PNG 仍按 Apple 的 824 网格带透明边。页面 `<head>` 里的：
 
 ```html
 <link rel="apple-touch-icon" href="/apple-touch-icon.png?v={{icons}}" sizes="180x180">

@@ -142,6 +142,19 @@ func tilePath() path {
 	return p
 }
 
+// squarePath covers the whole canvas. iOS and Android round a home screen icon
+// themselves, and paint the transparency of one they are given black, so the
+// web icons are full bleed: the picture, and no margin for the launcher to fill.
+func squarePath() path {
+	var p path
+	p.move(0, 0)
+	p.line(1024, 0)
+	p.line(1024, 1024)
+	p.line(0, 1024)
+	p.close()
+	return p
+}
+
 // disc is a circle in four cubic arcs.
 func disc(cx, cy, r float64) path {
 	const k = 0.5522847498
@@ -343,10 +356,16 @@ func (c *canvas) gradient(top, bottom rgb) image.Image {
 	return full
 }
 
-func render(d *doc, size int) *image.RGBA {
+func render(d *doc, size int) *image.RGBA { return renderIn(d, size, tilePath()) }
+
+// renderBleed is the same picture with the tile filling the frame, for the
+// icons a launcher masks on its own.
+func renderBleed(d *doc, size int) *image.RGBA { return renderIn(d, size, squarePath()) }
+
+func renderIn(d *doc, size int, frame path) *image.RGBA {
 	c := newCanvas(size)
-	tile := c.mask(tilePath())
-	c.fill(tilePath(), c.gradient(d.tile[0], d.tile[1]))
+	tile := c.mask(frame)
+	c.fill(frame, c.gradient(d.tile[0], d.tile[1]))
 
 	m := newCanvas(size)
 	for _, s := range d.shapes {
@@ -543,7 +562,7 @@ func main() {
 		name string
 		size int
 	}{{"apple-touch-icon.png", 180}, {"icon-192.png", 192}, {"icon-512.png", 512}} {
-		if err := writePNG(filepath.Join(*out, "web", s.name), render(tern(prod), s.size)); err != nil {
+		if err := writePNG(filepath.Join(*out, "web", s.name), renderBleed(tern(prod), s.size)); err != nil {
 			log.Fatalf("icon: %v", err)
 		}
 	}
