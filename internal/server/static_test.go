@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -56,19 +57,42 @@ func TestReadingPageNamesItsIcons(t *testing.T) {
 	}
 }
 
-func TestManifestNamesTaggedIcons(t *testing.T) {
+func TestManifestStartsAtTheFeed(t *testing.T) {
 	s := &Server{}
-	var manifest webIcon
-	for _, icon := range webIcons {
-		if strings.HasSuffix(icon.file, ".webmanifest") {
-			manifest = icon
+	var icon webIcon
+	for _, candidate := range webIcons {
+		if strings.HasSuffix(candidate.file, ".webmanifest") {
+			icon = candidate
 		}
 	}
 	rec := httptest.NewRecorder()
-	s.serveIcon(manifest)(rec, httptest.NewRequest(http.MethodGet, manifest.path, nil))
-	for _, want := range []string{"icon-192.png?v=" + iconTag(), "icon-512.png?v=" + iconTag()} {
-		if !bytes.Contains(rec.Body.Bytes(), []byte(want)) {
-			t.Errorf("the manifest does not name %s", want)
+	s.serveIcon(icon)(rec, httptest.NewRequest(http.MethodGet, icon.path, nil))
+
+	var manifest struct {
+		StartURL string `json:"start_url"`
+		Scope    string `json:"scope"`
+		Display  string `json:"display"`
+		Icons    []struct {
+			Src string `json:"src"`
+		} `json:"icons"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &manifest); err != nil {
+		t.Fatalf("the manifest is not JSON: %v", err)
+	}
+	// The feed is the home page: a shortcut must open on the articles, not on
+	// the conversations.
+	if manifest.StartURL != "/" {
+		t.Errorf("start_url %q, want \"/\"", manifest.StartURL)
+	}
+	if manifest.Scope != "/" || manifest.Display != "standalone" {
+		t.Errorf("scope %q, display %q", manifest.Scope, manifest.Display)
+	}
+	if len(manifest.Icons) == 0 {
+		t.Fatal("the manifest lists no icons")
+	}
+	for _, icon := range manifest.Icons {
+		if !strings.Contains(icon.Src, "?v="+iconTag()) {
+			t.Errorf("manifest icon %q does not carry the tag", icon.Src)
 		}
 	}
 }

@@ -18,7 +18,11 @@ before changing the app or the reading page.
   - desktop conversation: the same web view at `/t/<id>?embed=1`, under a native
     bar with the way back and the article link;
   - phone: `/threads`, `/t/<id>` and `/a/<id>` without `embed`, each with its own
-    header and controls.
+    header and controls. Added to the home screen it runs standalone, from
+    `site.webmanifest`: `start_url` `/` (the feed — never `/threads`), and the
+    conversation page takes its height from `--visible-h` (the visual viewport)
+    so the composer stays above the on-screen keyboard, which shrinks that
+    viewport without resizing the page.
 - The page names its own icons at fixed paths, served from the same embedded
   `static/` folder: `/favicon.ico`, `/apple-touch-icon.png` (the one iOS puts on a
   home screen — an SVG `data:` link alone gives the shortcut a page screenshot),

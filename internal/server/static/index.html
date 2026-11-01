@@ -938,11 +938,14 @@ html.embed .article__foot a { display: none; }
 .import .chip { flex: none; }
 
 /* One conversation: the page does not scroll, the log does, so the composer
-   keeps its place while the phone's browser bar comes and goes. */
+   keeps its place while the phone's browser bar comes and goes. The height is
+   the *visible* height where the browser can report it (--visible-h, from
+   visualViewport): the on-screen keyboard shrinks that without resizing the
+   page, and a fixed 100dvh would leave the composer under it. */
 body.chat-page {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  height: var(--visible-h, 100dvh);
   overflow: hidden;
 }
 body.chat-page .masthead { flex: none; position: static; }
@@ -1991,6 +1994,20 @@ body.chat-page .page {
 
   applyTheme();
   scheme.addEventListener('change', applyTheme);
+
+  // The visible height, for the one page that pins itself to it. On iOS the
+  // on-screen keyboard shrinks the visual viewport and leaves the page alone,
+  // so a conversation sized to 100dvh would keep its composer under the keys.
+  // The chat page does not scroll the page itself, so nothing else moves it.
+  const viewport = window.visualViewport;
+  if (viewport) {
+    const fit = () => {
+      document.documentElement.style.setProperty('--visible-h', `${Math.round(viewport.height)}px`);
+    };
+    viewport.addEventListener('resize', fit);
+    viewport.addEventListener('scroll', fit);
+    fit();
+  }
   if (themeButton) {
     themeButton.addEventListener('click', () => {
       try {
