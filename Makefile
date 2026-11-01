@@ -4,6 +4,9 @@
 # machine's own macOS build is produced for now.
 
 APP := Tern
+# MyGo names the disk image after the bundle's slug, lowercased: the release
+# upload keeps the dashes GitHub would otherwise turn into dots.
+SLUG := $(shell echo $(APP) | tr '[:upper:]' '[:lower:]')
 OS := $(shell go env GOOS)
 ARCH := $(shell go env GOARCH)
 VERSION := $(shell sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' mygo.json)
@@ -65,5 +68,5 @@ release: icons
 	git tag -a "v$(V)" -m "Tern $(V)"
 	git push origin main
 	git push origin "v$(V)"
-	gh release create "v$(V)" "build/$(OS)-$(ARCH)/$(APP) $(V) $(ARCH).dmg" \
+	gh release create "v$(V)" "build/$(OS)-$(ARCH)/$(SLUG)-$(V)-$(ARCH).dmg" \
 		--title "Tern $(V)" --generate-notes
