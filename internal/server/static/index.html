@@ -130,15 +130,17 @@ button { font: inherit; color: inherit; }
 img { max-width: 100%; display: block; }
 
 /* ------------------------------------------------------------------ masthead */
+/* The header owns the status bar's strip as well as its own row: the height is
+   the row plus the safe area, so the hairline and the background always cover
+   everything down to the content, whatever the inset is. It is opaque — a
+   photo scrolling under it used to tint the header while the status bar strip
+   stayed plain, and the two never met. */
 .masthead {
   position: sticky;
   top: 0;
   z-index: 70;
-  height: var(--masthead-h);
-  background: color-mix(in oklab, var(--paper) 94%, transparent);
+  background: var(--paper);
   border-bottom: 1px solid var(--rule);
-  backdrop-filter: saturate(180%) blur(16px);
-  -webkit-backdrop-filter: saturate(180%) blur(16px);
   padding-top: env(safe-area-inset-top);
 }
 
@@ -391,7 +393,9 @@ img { max-width: 100%; display: block; }
 /* ------------------------------------------------------------------ article */
 .progress {
   position: fixed;
-  top: calc(var(--masthead-h) + env(safe-area-inset-top) - 2px);
+  /* On the header's hairline: the header is the row plus the safe area plus
+     that one pixel of border. */
+  top: calc(var(--masthead-h) + env(safe-area-inset-top) - 1px);
   left: 0;
   right: 0;
   height: 2px;
